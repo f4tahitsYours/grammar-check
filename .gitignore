@@ -1,0 +1,19 @@
+# Environment
+.env
+backend/.env
+
+# Virtual Environment
+venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Pytest
+.pytest_cache/
+
+# Node
+node_modules/
+
+# VSCode
+.vscode/
