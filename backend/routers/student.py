@@ -316,6 +316,7 @@ async def generate_submission_poster(
 ):
     """
     Generate motivational poster from submission.
+    Returns fallback URL if generation fails.
     """
     supabase = get_supabase_client()
     
@@ -338,8 +339,17 @@ async def generate_submission_poster(
             detail="Submission not found"
         )
     
-    # Generate poster
-    poster_url = await generate_poster(submission["corrected_text"])
+    # Generate poster with fallback
+    try:
+        from backend.services.poster import PosterGenerationError
+        poster_url = await generate_poster(
+            submission["corrected_text"],
+            submission_id
+        )
+    except PosterGenerationError as e:
+        # Return fallback placeholder URL
+        logger.warning(f"Poster generation failed, using fallback: {e}")
+        poster_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/posters/placeholder.png"
     
     return {"poster_url": poster_url}
 
@@ -351,6 +361,7 @@ async def generate_submission_tts(
 ):
     """
     Generate text-to-speech audio from submission.
+    Returns null if generation fails (frontend uses Web Speech API).
     """
     supabase = get_supabase_client()
     
@@ -373,7 +384,16 @@ async def generate_submission_tts(
             detail="Submission not found"
         )
     
-    # Generate TTS
-    audio_url = await generate_tts(submission["corrected_text"])
+    # Generate TTS with fallback
+    try:
+        from backend.services.tts import TTSGenerationError
+        audio_url = await generate_tts(
+            submission["corrected_text"],
+            submission_id
+        )
+    except TTSGenerationError as e:
+        # Return null - frontend will use Web Speech API
+        logger.warning(f"TTS generation failed, returning null: {e}")
+        audio_url = None
     
     return {"audio_url": audio_url}
