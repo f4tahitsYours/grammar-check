@@ -1,10 +1,20 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from supabase import create_client, Client
+import logging
+
 from backend.config import settings
 from backend.models.response import UserPayload
 
+logger = logging.getLogger(__name__)
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+def _get_supabase_client() -> Client:
+    """Get Supabase client for token verification."""
+    return create_client(settings.supabase_url, settings.supabase_key)
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserPayload:
     credentials_exception = HTTPException(
@@ -13,25 +23,34 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserPayload:
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Supabase JWT tokens are signed with the project JWT secret
-        payload = jwt.decode(
-            token, 
-            settings.JWT_SECRET, 
-            algorithms=[settings.JWT_ALGORITHM], 
-            audience="authenticated"
-        )
-        user_id: str = payload.get("sub")
-        email: str = payload.get("email")
+        # Verify token via Supabase (handles ES256 algorithm correctly)
+        client = _get_supabase_client()
+        user_response = client.auth.get_user(token)
         
-        user_metadata = payload.get("user_metadata", {})
-        role = user_metadata.get("role")
-        name = user_metadata.get("name")
-        
-        if user_id is None or email is None or role is None:
+        if not user_response or not user_response.user:
             raise credentials_exception
-            
-        return UserPayload(user_id=user_id, email=email, role=role, name=name)
-    except JWTError:
+        
+        user = user_response.user
+        user_metadata = user.user_metadata or {}
+        
+        # Extract role from user_metadata (new Supabase format)
+        role = user_metadata.get("role")
+        name = user_metadata.get("name", "Unknown")
+        
+        if not role:
+            logger.warning(f"User {user.id} has no role in user_metadata")
+            raise credentials_exception
+        
+        return UserPayload(
+            user_id=str(user.id),
+            email=user.email,
+            role=role,
+            name=name
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"JWT verification failed: {e}")
         raise credentials_exception
 
 async def require_student(user: UserPayload = Depends(get_current_user)) -> UserPayload:

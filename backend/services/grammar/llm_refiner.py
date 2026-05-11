@@ -50,9 +50,15 @@ class OpenAIGrammarMCP(BaseMCPClient):
     tool_name = "openai_grammar"
     
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self._client: AsyncOpenAI | None = None
         self.model = "gpt-4o-mini"
         self.temperature = 0
+    
+    def _get_client(self) -> AsyncOpenAI:
+        """Lazy initialization of OpenAI client."""
+        if self._client is None:
+            self._client = AsyncOpenAI(api_key=settings.openai_api_key)
+        return self._client
     
     async def refine_grammar(
         self, 
@@ -75,7 +81,8 @@ class OpenAIGrammarMCP(BaseMCPClient):
         user_prompt = self._build_user_prompt(text, existing_errors)
         
         try:
-            response = await self.client.chat.completions.create(
+            client = self._get_client()
+            response = await client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
                 response_format={"type": "json_object"},
@@ -140,7 +147,8 @@ class OpenAIGrammarMCP(BaseMCPClient):
     async def health_check(self) -> bool:
         """Check if OpenAI service is available."""
         try:
-            await self.client.models.list()
+            client = self._get_client()
+            await client.models.list()
             return True
         except Exception:
             return False

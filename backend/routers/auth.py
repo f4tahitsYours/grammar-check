@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, status
 from backend.models.request import LoginRequest, RegisterRequest
 from backend.models.response import LoginResponse, RegisterResponse
 from backend.services.mcp_clients import SupabaseAuthMCP
-from gotrue.errors import AuthApiError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,8 @@ async def login(request: LoginRequest):
             user_id=str(user.id),
             name=metadata.get("name", "Unknown")
         )
-    except AuthApiError as e:
+    except ValueError as e:
+        # ValueError is raised by SupabaseAuthMCP for invalid credentials
         logger.error(f"Login failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,12 +57,14 @@ async def register(request: RegisterRequest):
         user = result["user"]
         
         try:
-            auth_mcp.admin_client.table("users").insert({
-                "id": str(user.id),
+            admin_client = auth_mcp._get_admin_client()
+            admin_client.table("users").insert({
+                "id": str(user.id),  # UUID from auth.users
                 "email": request.email,
                 "name": request.name,
                 "role": request.role,
-                "class_name": request.class_name
+                "class_name": request.class_name,
+                "is_active": True  # Explicitly set is_active
             }).execute()
         except Exception as db_e:
             logger.error(f"Failed to insert user into public.users: {str(db_e)}")
@@ -73,7 +75,8 @@ async def register(request: RegisterRequest):
             email=request.email,
             role=request.role
         )
-    except AuthApiError as e:
+    except ValueError as e:
+        # ValueError is raised by SupabaseAuthMCP for sign up failures
         if "already registered" in str(e).lower() or "already exists" in str(e).lower():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,

@@ -21,8 +21,8 @@ class TTSGenerationError(Exception):
 def get_supabase_client() -> Client:
     """Get Supabase client with service role key for storage operations."""
     return create_client(
-        settings.SUPABASE_URL,
-        settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
+        settings.supabase_url,
+        settings.supabase_service_key or settings.supabase_key
     )
 
 
@@ -50,7 +50,7 @@ async def generate_tts(corrected_text: str, submission_id: str) -> Optional[str]
             )
         
         # Step 2: Initialize OpenAI TTS MCP
-        tts_mcp = OpenAITTSMCP(api_key=settings.OPENAI_API_KEY)
+        tts_mcp = OpenAITTSMCP(api_key=settings.openai_api_key)
         
         # Step 3: Generate audio using TTS-1
         audio_bytes = await tts_mcp.generate_audio(text)

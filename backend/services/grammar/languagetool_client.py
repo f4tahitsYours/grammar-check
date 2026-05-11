@@ -37,7 +37,7 @@ class LanguageToolMCP(BaseMCPClient):
     tool_name = "languagetool"
     
     def __init__(self):
-        self.base_url = settings.LANGUAGETOOL_URL
+        self.base_url = settings.languagetool_url
         self.timeout = 10.0
     
     async def check_grammar(self, text: str) -> list[RawError]:

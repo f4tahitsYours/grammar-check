@@ -21,8 +21,8 @@ COST_PER_TTS_CALL: float = 0.0  # Placeholder for Phase 7
 def get_supabase_client() -> Client:
     """Get Supabase client with service role key for metrics operations."""
     return create_client(
-        settings.SUPABASE_URL,
-        settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
+        settings.supabase_url,
+        settings.supabase_service_key or settings.supabase_key
     )
 
 

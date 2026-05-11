@@ -21,15 +21,15 @@ class SupabaseAuthMCP(BaseMCPClient):
     def _get_client(self) -> Client:
         """Lazy initialization of Supabase client."""
         if self._client is None:
-            self._client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+            self._client = create_client(settings.supabase_url, settings.supabase_key)
         return self._client
     
     def _get_admin_client(self) -> Client:
         """Lazy initialization of Supabase admin client."""
         if self._admin_client is None:
             self._admin_client = create_client(
-                settings.SUPABASE_URL, 
-                settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
+                settings.supabase_url, 
+                settings.supabase_service_key or settings.supabase_key
             )
         return self._admin_client
 

@@ -21,8 +21,8 @@ class PosterGenerationError(Exception):
 def get_supabase_client() -> Client:
     """Get Supabase client with service role key for storage operations."""
     return create_client(
-        settings.SUPABASE_URL,
-        settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
+        settings.supabase_url,
+        settings.supabase_service_key or settings.supabase_key
     )
 
 
@@ -42,7 +42,7 @@ async def generate_poster(corrected_text: str, submission_id: str) -> str:
     """
     try:
         # Step 1: Initialize OpenAI Poster MCP
-        poster_mcp = OpenAIPosterMCP(api_key=settings.OPENAI_API_KEY)
+        poster_mcp = OpenAIPosterMCP(api_key=settings.openai_api_key)
         
         # Step 2: Generate image description prompt using GPT-4o-mini
         prompt, input_tokens, output_tokens = await poster_mcp.generate_prompt(corrected_text)

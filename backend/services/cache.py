@@ -15,10 +15,16 @@ class GrammarCache:
     """PostgreSQL-backed cache for grammar checking results."""
     
     def __init__(self):
-        self.client: Client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
-        )
+        self._client: Client | None = None
+    
+    def _get_client(self) -> Client:
+        """Lazy initialization of Supabase client with service role key."""
+        if self._client is None:
+            self._client = create_client(
+                settings.supabase_url,
+                settings.supabase_service_key or settings.supabase_key
+            )
+        return self._client
     
     async def get(self, cache_key: str) -> Optional[dict]:
         """
@@ -31,7 +37,8 @@ class GrammarCache:
             Cached result dict or None if not found
         """
         try:
-            response = self.client.table("grammar_cache").select("*").eq(
+            client = self._get_client()
+            response = client.table("grammar_cache").select("*").eq(
                 "input_hash", cache_key
             ).execute()
             
@@ -72,7 +79,8 @@ class GrammarCache:
             True if successful, False otherwise
         """
         try:
-            self.client.table("grammar_cache").upsert({
+            client = self._get_client()
+            client.table("grammar_cache").upsert({
                 "input_hash": cache_key,
                 "corrected_text": corrected_text,
                 "errors_json": errors_json,

@@ -3,15 +3,23 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
-    SUPABASE_URL: str = "http://localhost:8000"
-    SUPABASE_KEY: str = "anon-key"
-    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
-    JWT_SECRET: str = "super-secret-jwt-key"
-    JWT_ALGORITHM: str = "HS256"
-    OPENAI_API_KEY: str = ""
-    LANGUAGETOOL_URL: str = "https://api.languagetool.org/v2"
-    ENVIRONMENT: str = "development"
+    supabase_url: str = "http://localhost:8000"
+    supabase_key: str = "anon-key"
+    supabase_service_key: Optional[str] = None
+    jwt_secret: str = "super-secret-jwt-key"
+    jwt_algorithm: str = "HS256"
+    openai_api_key: str = ""
+    languagetool_url: str = "https://api.languagetool.org/v2"
+    environment: str = "development"
     
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=["backend/.env", ".env"],
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()
+
+# Debug prints (temporary - remove after verification)
+print(f"[CONFIG] SUPABASE_URL loaded: {bool(settings.supabase_url)}")
+print(f"[CONFIG] SUPABASE_KEY loaded: {bool(settings.supabase_key)}")

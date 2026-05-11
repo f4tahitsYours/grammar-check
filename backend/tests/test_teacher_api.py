@@ -427,24 +427,29 @@ def test_review_submission_success(override_auth, mock_supabase):
     """Test 11: PATCH /submission/{id}/review with valid scores → 200, calculates total"""
     submission_id = "sub-123"
     
-    # Mock submission lookup with assignment and rubric
-    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{
+    # Mock 3 separate queries: submission, assignment, rubric
+    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.side_effect = [
+        # Query 1: Get submission data
+        MagicMock(data=[{
             "id": submission_id,
-            "student_id": "student-1",
-            "rubric_status": "awaiting_review",
+            "assignment_id": "assign-1",
             "score_grammar": 5,
             "score_mechanics": 4,
-            "assignments": {"teacher_id": "teacher-123"},
-            "assignment_rubrics": {
-                "grammar_weight": 5,
-                "mechanics_weight": 5,
-                "content_weight": 5,
-                "unity_weight": 5,
-                "grading_scale": {"17": "A", "13": "B", "9": "C", "0": "D"}
-            }
-        }]
-    )
+            "rubric_status": "awaiting_review",
+        }]),
+        # Query 2: Get assignment to check teacher ownership
+        MagicMock(data=[{
+            "teacher_id": "teacher-123",
+        }]),
+        # Query 3: Get rubric for validation
+        MagicMock(data=[{
+            "grammar_weight": 5,
+            "mechanics_weight": 5,
+            "content_weight": 5,
+            "unity_weight": 5,
+            "grading_scale": {"17": "A", "13": "B", "9": "C", "0": "D"}
+        }]),
+    ]
     
     # Mock update
     mock_supabase.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(
@@ -477,15 +482,10 @@ def test_review_submission_already_reviewed(override_auth, mock_supabase):
     mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
         data=[{
             "id": submission_id,
+            "assignment_id": "assign-1",
+            "score_grammar": 5,
+            "score_mechanics": 4,
             "rubric_status": "complete",  # Already reviewed
-            "assignments": {"teacher_id": "teacher-123"},
-            "assignment_rubrics": {
-                "grammar_weight": 5,
-                "mechanics_weight": 5,
-                "content_weight": 5,
-                "unity_weight": 5,
-                "grading_scale": {"17": "A", "13": "B", "9": "C", "0": "D"}
-            }
         }]
     )
     

@@ -33,8 +33,8 @@ router = APIRouter(prefix="/api/v1/student", tags=["student"])
 def get_supabase_client() -> Client:
     """Get Supabase client with service role key for database operations."""
     return create_client(
-        settings.SUPABASE_URL,
-        settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
+        settings.supabase_url,
+        settings.supabase_service_key or settings.supabase_key
     )
 
 
@@ -349,7 +349,7 @@ async def generate_submission_poster(
     except PosterGenerationError as e:
         # Return fallback placeholder URL
         logger.warning(f"Poster generation failed, using fallback: {e}")
-        poster_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/posters/placeholder.png"
+        poster_url = f"{settings.supabase_url}/storage/v1/object/public/posters/placeholder.png"
     
     return {"poster_url": poster_url}
 

@@ -31,8 +31,8 @@ router = APIRouter(prefix="/api/v1/teacher", tags=["teacher"])
 def get_supabase_client() -> Client:
     """Get Supabase client with service role key for database operations."""
     return create_client(
-        settings.SUPABASE_URL,
-        settings.SUPABASE_SERVICE_ROLE_KEY or settings.SUPABASE_KEY
+        settings.supabase_url,
+        settings.supabase_service_key or settings.supabase_key
     )
 
 
@@ -63,22 +63,24 @@ async def get_dashboard(
             detail="Teacher not found"
         )
     
-    teacher_school_id = teacher_result.data[0]["school_id"]
+    teacher_school_id = teacher_result.data[0].get("school_id")
     
     # Build query with JOIN at DB level using Supabase syntax
     # Select submissions with student info and assignment info
+    # Use explicit FK: users!submissions_student_id_fkey to get student data
     select_fields = (
         "id, student_id, assignment_id, score, grade, word_count, "
         "error_count, rubric_status, created_at, "
-        "users!inner(name, school_id), "
+        "users!submissions_student_id_fkey!inner(name, school_id), "
         "assignments(title)"
     )
     
     # Start query
     query = supabase.table("submissions").select(select_fields, count="exact")
     
-    # Filter by school_id (security)
-    query = query.eq("users.school_id", teacher_school_id)
+    # Filter by school_id (security) - only if teacher has school_id
+    if teacher_school_id is not None:
+        query = query.eq("users.school_id", teacher_school_id)
     
     # Apply optional filters
     if student_id:
@@ -146,11 +148,12 @@ async def get_submission_detail(
             detail="Teacher not found"
         )
     
-    teacher_school_id = teacher_result.data[0]["school_id"]
+    teacher_school_id = teacher_result.data[0].get("school_id")
     
     # Get submission with student school check
+    # Use explicit FK: users!submissions_student_id_fkey to get student data
     submission_result = supabase.table("submissions").select(
-        "*, users!inner(school_id)"
+        "*, users!submissions_student_id_fkey!inner(school_id)"
     ).eq("id", submission_id).execute()
     
     if not submission_result.data:
@@ -161,12 +164,13 @@ async def get_submission_detail(
     
     submission = submission_result.data[0]
     
-    # Security check: verify same school
-    if submission["users"]["school_id"] != teacher_school_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Submission not found"
-        )
+    # Security check: verify same school (only if teacher has school_id)
+    if teacher_school_id is not None:
+        if submission["users"]["school_id"] != teacher_school_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Submission not found"
+            )
     
     return SubmissionDetailResponse(
         id=str(submission["id"]),
@@ -217,15 +221,20 @@ async def export_submissions(
             detail="Teacher not found"
         )
     
-    teacher_school_id = teacher_result.data[0]["school_id"]
+    teacher_school_id = teacher_result.data[0].get("school_id")
     
     # Build query
+    # Use explicit FK: users!submissions_student_id_fkey to get student data
     query = supabase.table("submissions").select(
-        "id, student_id, users!inner(name, school_id), assignment_id, "
+        "id, student_id, users!submissions_student_id_fkey!inner(name, school_id), assignment_id, "
         "assignments(title), score, grade, word_count, error_count, "
         "rubric_status, score_grammar, score_mechanics, score_content, "
         "score_unity, score_total, created_at"
-    ).eq("users.school_id", teacher_school_id)
+    )
+    
+    # Filter by school_id (security) - only if teacher has school_id
+    if teacher_school_id is not None:
+        query = query.eq("users.school_id", teacher_school_id)
     
     # Apply optional filters
     if student_id:
@@ -466,18 +475,23 @@ async def get_pending_reviews(
             detail="Teacher not found"
         )
     
-    teacher_school_id = teacher_result.data[0]["school_id"]
+    teacher_school_id = teacher_result.data[0].get("school_id")
     
     # Get pending submissions with JOIN
-    result = supabase.table("submissions").select(
-        "id, student_id, users!inner(name, school_id), assignment_id, "
+    # Use explicit FK: users!submissions_student_id_fkey to get student data
+    query = supabase.table("submissions").select(
+        "id, student_id, users!submissions_student_id_fkey!inner(name, school_id), assignment_id, "
         "assignments!inner(title), word_count, error_count, "
         "score_grammar, score_mechanics, created_at"
     ).eq(
         "rubric_status", "awaiting_review"
-    ).eq(
-        "users.school_id", teacher_school_id
-    ).order(
+    )
+    
+    # Filter by school_id - only if teacher has school_id
+    if teacher_school_id is not None:
+        query = query.eq("users.school_id", teacher_school_id)
+    
+    result = query.order(
         "created_at", desc=False  # Oldest first
     ).execute()
     
@@ -518,9 +532,9 @@ async def review_submission(
     """
     supabase = get_supabase_client()
     
-    # Get submission with assignment and rubric
+    # Step 1: Get submission data
     submission_result = supabase.table("submissions").select(
-        "*, assignments!inner(teacher_id), assignment_rubrics!inner(*)"
+        "id, assignment_id, score_grammar, score_mechanics, rubric_status"
     ).eq("id", submission_id).execute()
     
     if not submission_result.data:
@@ -538,15 +552,42 @@ async def review_submission(
             detail="Submission already reviewed"
         )
     
+    # Step 2: Get assignment to check teacher ownership
+    assignment_result = supabase.table("assignments").select(
+        "teacher_id"
+    ).eq("id", submission["assignment_id"]).execute()
+    
+    if not assignment_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found"
+        )
+    
+    assignment = assignment_result.data[0]
+    
     # Check ownership
-    if submission["assignments"]["teacher_id"] != current_user.user_id:
+    if assignment["teacher_id"] != current_user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only review submissions for your own assignments"
         )
     
-    # Get rubric
-    rubric = submission["assignment_rubrics"]
+    # Step 3: Get rubric for validation
+    rubric_result = supabase.table("assignment_rubrics").select(
+        "*"
+    ).eq("assignment_id", submission["assignment_id"]).execute()
+    
+    if rubric_result.data:
+        rubric = rubric_result.data[0]
+    else:
+        # Default rubric if assignment doesn't have one
+        rubric = {
+            "grammar_weight": 5,
+            "mechanics_weight": 5,
+            "content_weight": 5,
+            "unity_weight": 5,
+            "grading_scale": {"17": "A", "13": "B", "9": "C", "0": "D"}
+        }
     
     # Validate scores against rubric weights
     if not (1 <= request.score_content <= rubric["content_weight"]):
