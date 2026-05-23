@@ -25,6 +25,8 @@ class AssignmentCreateRequest(BaseModel):
     title: str = Field(min_length=1)
     description: Optional[str] = None
     class_target: str = Field(min_length=1)
+    is_active: bool = True
+    show_score: bool = False
     rubric: Optional['RubricConfigRequest'] = None
 
 class RubricConfigRequest(BaseModel):

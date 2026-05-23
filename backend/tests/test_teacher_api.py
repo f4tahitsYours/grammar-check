@@ -500,3 +500,77 @@ def test_review_submission_already_reviewed(override_auth, mock_supabase):
     
     assert response.status_code == 409
     assert "already reviewed" in response.json()["detail"].lower()
+
+
+def test_get_assignments_list(override_auth, mock_supabase):
+    """Test 13: GET /assignment → returns all assignments for teacher with rubrics"""
+    # Mock assignments query with rubrics
+    mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = MagicMock(
+        data=[
+            {
+                "id": "assign-1",
+                "title": "Essay Assignment 1",
+                "description": "Write about your favorite book",
+                "class_target": "10A",
+                "is_active": True,
+                "show_score": False,
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-02T00:00:00Z",
+                "assignment_rubrics": [
+                    {
+                        "grammar_weight": 5,
+                        "mechanics_weight": 5,
+                        "content_weight": 5,
+                        "unity_weight": 5,
+                    }
+                ]
+            },
+            {
+                "id": "assign-2",
+                "title": "Essay Assignment 2",
+                "description": "Write about your dream job",
+                "class_target": "10B",
+                "is_active": True,
+                "show_score": True,
+                "created_at": "2024-01-03T00:00:00Z",
+                "updated_at": None,
+                "assignment_rubrics": []  # No rubric
+            },
+        ]
+    )
+    
+    client = TestClient(app)
+    response = client.get("/api/v1/teacher/assignment")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "data" in data
+    assert len(data["data"]) == 2
+    
+    # Check first assignment
+    assert data["data"][0]["assignment_id"] == "assign-1"
+    assert data["data"][0]["title"] == "Essay Assignment 1"
+    assert data["data"][0]["show_score"] is False
+    assert "rubric" in data["data"][0]
+    assert data["data"][0]["rubric"]["grammar_weight"] == 5
+    
+    # Check second assignment (no rubric)
+    assert data["data"][1]["assignment_id"] == "assign-2"
+    assert data["data"][1]["show_score"] is True
+    assert "rubric" not in data["data"][1]
+
+
+def test_get_assignments_empty(override_auth, mock_supabase):
+    """Test 14: GET /assignment when teacher has no assignments → returns empty list"""
+    # Mock empty assignments query
+    mock_supabase.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
+    
+    client = TestClient(app)
+    response = client.get("/api/v1/teacher/assignment")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "data" in data
+    assert len(data["data"]) == 0

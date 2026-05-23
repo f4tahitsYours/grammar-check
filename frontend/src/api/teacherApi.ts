@@ -46,6 +46,8 @@ export const createTeacherAssignment = async (
         title: string
         description: string
         class_target: string
+        is_active: boolean
+        show_score: boolean
         rubric: {
             grammar_weight: number
             mechanics_weight: number
@@ -80,6 +82,8 @@ export const updateTeacherAssignment = async (
         title: string
         description: string
         class_target: string
+        is_active: boolean
+        show_score: boolean
         rubric: {
             grammar_weight: number
             mechanics_weight: number

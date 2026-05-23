@@ -307,6 +307,77 @@ async def export_submissions(
     )
 
 
+@router.get("/assignment")
+async def get_assignments(
+    current_user: UserPayload = Depends(require_teacher),
+):
+    """
+    Get all assignments created by the current teacher.
+    Returns assignments with their rubrics.
+    """
+    supabase = get_supabase_client()
+    
+    # Get assignments with rubrics using explicit JOIN syntax
+    result = supabase.table("assignments").select(
+        "id, title, description, class_target, is_active, show_score, created_at, "
+        "assignment_rubrics(id, grammar_weight, mechanics_weight, content_weight, unity_weight)"
+    ).eq("teacher_id", current_user.user_id).order(
+        "created_at", desc=True
+    ).execute()
+    
+    # Transform data to match frontend expectations
+    assignments = []
+    for row in result.data:
+        assignment = {
+            "assignment_id": str(row["id"]),
+            "id": str(row["id"]),
+            "title": row["title"],
+            "description": row["description"],
+            "class_target": row["class_target"],
+            "is_active": row.get("is_active", True),
+            "show_score": row.get("show_score", False),
+            "created_at": row["created_at"],
+        }
+        
+        # Add rubric if exists
+        assignment_rubrics = row.get("assignment_rubrics")
+        
+        # Debug logging
+        logger.info(f"Assignment {row['id']}: assignment_rubrics type = {type(assignment_rubrics)}, value = {assignment_rubrics}")
+        
+        if assignment_rubrics:
+            # Handle both list and single object
+            if isinstance(assignment_rubrics, list):
+                if len(assignment_rubrics) > 0:
+                    rubric = assignment_rubrics[0]
+                    assignment["rubric"] = {
+                        "grammar_weight": rubric["grammar_weight"],
+                        "mechanics_weight": rubric["mechanics_weight"],
+                        "content_weight": rubric["content_weight"],
+                        "unity_weight": rubric["unity_weight"],
+                    }
+                    logger.info(f"Assignment {row['id']}: Added rubric from list")
+            elif isinstance(assignment_rubrics, dict):
+                # Single object (not in array)
+                assignment["rubric"] = {
+                    "grammar_weight": assignment_rubrics["grammar_weight"],
+                    "mechanics_weight": assignment_rubrics["mechanics_weight"],
+                    "content_weight": assignment_rubrics["content_weight"],
+                    "unity_weight": assignment_rubrics["unity_weight"],
+                }
+                logger.info(f"Assignment {row['id']}: Added rubric from dict")
+        else:
+            logger.info(f"Assignment {row['id']}: No rubric data")
+        
+        assignments.append(assignment)
+    
+    logger.info(
+        f"Retrieved {len(assignments)} assignments for teacher_id={current_user.user_id}"
+    )
+    
+    return {"data": assignments}
+
+
 @router.post("/assignment")
 async def create_assignment(
     request: AssignmentCreateRequest,
@@ -323,7 +394,8 @@ async def create_assignment(
         "description": request.description,
         "teacher_id": current_user.user_id,
         "class_target": request.class_target,
-        "is_active": True,
+        "is_active": request.is_active,
+        "show_score": request.show_score,
     }
     
     assignment_result = supabase.table("assignments").insert(assignment_data).execute()
@@ -405,6 +477,8 @@ async def update_assignment(
         "title": request.title,
         "description": request.description,
         "class_target": request.class_target,
+        "is_active": request.is_active,
+        "show_score": request.show_score,
     }
     
     update_result = supabase.table("assignments").update(update_data).eq(

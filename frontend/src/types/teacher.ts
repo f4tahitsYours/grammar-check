@@ -22,6 +22,25 @@ export interface TeacherDashboardResponse {
     active_assignments: number
 }
 
+export interface Assignment {
+    assignment_id?: string
+    id?: string
+    title: string
+    description: string
+    class_target: string
+    is_active: boolean
+    show_score: boolean
+    rubric?: {
+        grammar_weight: number
+        mechanics_weight: number
+        content_weight: number
+        unity_weight: number
+        grading_scale: Record<string, string>
+    }
+    created_at?: string
+    updated_at?: string
+}
+
 export interface SubmissionDetailResponse {
     id: string
 
@@ -30,8 +49,8 @@ export interface SubmissionDetailResponse {
 
     errors: any[]
 
-    score: number
-    grade: string
+    score: number | null
+    grade: string | null
 
     word_count: number
     error_count: number
@@ -45,16 +64,33 @@ export interface SubmissionDetailResponse {
 
     created_at: string
 
-    assignment_id: string
+    assignment_id: string | null
 
     rubric_status: string
 
-    score_grammar: number
-    score_mechanics: number
-    score_content: number
-    score_unity: number
+    score_grammar: number | null
+    score_mechanics: number | null
+    score_content: number | null
+    score_unity: number | null
 
-    score_total: number
+    score_total: number | null
 
     reviewed_at: string | null
+    
+    score_hidden: boolean
+}
+
+export interface SubmissionListItem {
+    id: string
+    score: number | null
+    grade: string | null
+    word_count: number
+    error_count: number
+    created_at: string
+    assignment_id: string | null
+    rubric_status: string
+    score_grammar: number | null
+    score_mechanics: number | null
+    score_total: number | null
+    score_hidden: boolean
 }

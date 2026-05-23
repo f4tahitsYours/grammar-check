@@ -26,6 +26,21 @@ class RoleUpdateRequest(BaseModel):
     role: str
 
 
+class SchoolCreateRequest(BaseModel):
+    """Request model for creating a new school."""
+    name: str
+
+
+class SchoolUpdateRequest(BaseModel):
+    """Request model for updating school name."""
+    name: str
+
+
+class UserSchoolAssignRequest(BaseModel):
+    """Request model for assigning user to a school."""
+    school_id: str
+
+
 def get_supabase_client() -> Client:
     """Get Supabase client with service role key for admin operations."""
     return create_client(
@@ -522,4 +537,256 @@ async def health_check(
         "status": "healthy" if db_status == "healthy" else "degraded",
         "database": db_status,
         "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+@router.get("/schools")
+async def list_schools(
+    current_user: UserPayload = Depends(require_admin),
+):
+    """
+    List all schools with total user count per school.
+    Returns list of schools with their user counts.
+    """
+    supabase = get_supabase_client()
+    
+    # Get all schools
+    schools_result = supabase.table("schools").select(
+        "id, name, created_at"
+    ).order("name", desc=False).execute()
+    
+    # Get user counts per school
+    schools_with_counts = []
+    for school in schools_result.data:
+        # Count users for this school
+        users_result = supabase.table("users").select(
+            "id", count="exact"
+        ).eq("school_id", school["id"]).execute()
+        
+        schools_with_counts.append({
+            "id": school["id"],
+            "name": school["name"],
+            "created_at": school["created_at"],
+            "total_users": users_result.count or 0
+        })
+    
+    return schools_with_counts
+
+
+@router.post("/schools")
+async def create_school(
+    request: SchoolCreateRequest,
+    current_user: UserPayload = Depends(require_admin),
+):
+    """
+    Create a new school.
+    Validates name uniqueness and logs action to audit_log.
+    """
+    supabase = get_supabase_client()
+    
+    # Validate name is not empty or whitespace
+    if not request.name or not request.name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="School name cannot be empty or whitespace"
+        )
+    
+    # Check for duplicate name
+    existing_result = supabase.table("schools").select("id").eq(
+        "name", request.name.strip()
+    ).execute()
+    
+    if existing_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="School name already exists"
+        )
+    
+    # Insert new school
+    insert_result = supabase.table("schools").insert({
+        "name": request.name.strip()
+    }).execute()
+    
+    if not insert_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create school"
+        )
+    
+    school = insert_result.data[0]
+    
+    # Log to audit_log
+    supabase.table("audit_log").insert({
+        "user_id": current_user.user_id,
+        "action": "school.create",
+        "resource": "school",
+        "resource_id": school["id"],
+        "metadata": {
+            "school_name": school["name"]
+        },
+    }).execute()
+    
+    logger.info(
+        f"School created: school_id={school['id']}, name={school['name']}, "
+        f"admin_id={current_user.user_id}"
+    )
+    
+    return {
+        "id": school["id"],
+        "name": school["name"],
+        "created_at": school["created_at"]
+    }
+
+
+@router.patch("/schools/{school_id}")
+async def update_school(
+    school_id: str,
+    request: SchoolUpdateRequest,
+    current_user: UserPayload = Depends(require_admin),
+):
+    """
+    Update school name.
+    Validates name uniqueness and logs action to audit_log.
+    """
+    supabase = get_supabase_client()
+    
+    # Validate name is not empty or whitespace
+    if not request.name or not request.name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="School name cannot be empty or whitespace"
+        )
+    
+    # Check if school exists
+    school_result = supabase.table("schools").select("id, name").eq(
+        "id", school_id
+    ).execute()
+    
+    if not school_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="School not found"
+        )
+    
+    old_school = school_result.data[0]
+    
+    # Check for duplicate name (excluding current school)
+    duplicate_result = supabase.table("schools").select("id").eq(
+        "name", request.name.strip()
+    ).neq("id", school_id).execute()
+    
+    if duplicate_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="School name already exists"
+        )
+    
+    # Update school
+    update_result = supabase.table("schools").update({
+        "name": request.name.strip()
+    }).eq("id", school_id).execute()
+    
+    if not update_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update school"
+        )
+    
+    school = update_result.data[0]
+    
+    # Log to audit_log
+    supabase.table("audit_log").insert({
+        "user_id": current_user.user_id,
+        "action": "school.update",
+        "resource": "school",
+        "resource_id": school_id,
+        "metadata": {
+            "old_name": old_school["name"],
+            "new_name": school["name"]
+        },
+    }).execute()
+    
+    logger.info(
+        f"School updated: school_id={school_id}, old_name={old_school['name']}, "
+        f"new_name={school['name']}, admin_id={current_user.user_id}"
+    )
+    
+    return {
+        "id": school["id"],
+        "name": school["name"],
+        "created_at": school["created_at"]
+    }
+
+
+@router.patch("/users/{user_id}/school")
+async def assign_user_to_school(
+    user_id: str,
+    request: UserSchoolAssignRequest,
+    current_user: UserPayload = Depends(require_admin),
+):
+    """
+    Assign or move user to a specific school.
+    Validates user and school existence, logs action to audit_log.
+    """
+    supabase = get_supabase_client()
+    
+    # Check if user exists
+    user_result = supabase.table("users").select("id, email, school_id").eq(
+        "id", user_id
+    ).execute()
+    
+    if not user_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    user = user_result.data[0]
+    
+    # Check if school exists
+    school_result = supabase.table("schools").select("id, name").eq(
+        "id", request.school_id
+    ).execute()
+    
+    if not school_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="School not found"
+        )
+    
+    school = school_result.data[0]
+    
+    # Update user's school_id
+    update_result = supabase.table("users").update({
+        "school_id": request.school_id
+    }).eq("id", user_id).execute()
+    
+    if not update_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to assign user to school"
+        )
+    
+    # Log to audit_log
+    supabase.table("audit_log").insert({
+        "user_id": current_user.user_id,
+        "action": "user.school_assign",
+        "resource": "user",
+        "resource_id": user_id,
+        "metadata": {
+            "user_id": user_id,
+            "school_id": request.school_id,
+            "school_name": school["name"]
+        },
+    }).execute()
+    
+    logger.info(
+        f"User assigned to school: user_id={user_id}, school_id={request.school_id}, "
+        f"school_name={school['name']}, admin_id={current_user.user_id}"
+    )
+    
+    return {
+        "user_id": user_id,
+        "school_id": request.school_id,
+        "school_name": school["name"]
     }

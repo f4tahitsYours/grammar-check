@@ -23,6 +23,8 @@ type Assignment = {
     title: string
     description: string
     class_target: string
+    is_active?: boolean
+    show_score?: boolean
 
     rubric?: {
         grammar_weight: number
@@ -71,6 +73,7 @@ function TeacherAssignment() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [classTarget, setClassTarget] = useState('')
+    const [showScore, setShowScore] = useState(false)
 
     const [grammarWeight, setGrammarWeight] = useState(0)
     const [mechanicsWeight, setMechanicsWeight] = useState(0)
@@ -81,6 +84,7 @@ function TeacherAssignment() {
         setTitle('')
         setDescription('')
         setClassTarget('')
+        setShowScore(false)
 
         setGrammarWeight(0)
         setMechanicsWeight(0)
@@ -109,6 +113,7 @@ function TeacherAssignment() {
         setTitle(assignment.title)
         setDescription(assignment.description)
         setClassTarget(assignment.class_target)
+        setShowScore(assignment.show_score ?? false)
 
         setGrammarWeight(assignment.rubric?.grammar_weight ?? 0)
         setMechanicsWeight(assignment.rubric?.mechanics_weight ?? 0)
@@ -134,6 +139,8 @@ function TeacherAssignment() {
                 title: title.trim(),
                 description: description.trim(),
                 class_target: classTarget.trim(),
+                is_active: true,
+                show_score: showScore,
                 rubric: {
                     grammar_weight: Number(grammarWeight),
                     mechanics_weight: Number(mechanicsWeight),
@@ -960,6 +967,82 @@ function TeacherAssignment() {
                                                             dark:focus:ring-indigo-500/20
                                                         "
                                                     />
+
+                                                </div>
+
+                                                {/* SHOW SCORE TOGGLE */}
+                                                <div>
+
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                        Score Visibility
+                                                    </label>
+
+                                                    <div
+                                                        className="
+                                                            mt-2
+                                                            flex
+                                                            items-center
+                                                            justify-between
+                                                            rounded-2xl
+                                                            border
+                                                            border-slate-200
+                                                            bg-white
+                                                            px-4
+                                                            py-3
+                                                            dark:border-slate-700
+                                                            dark:bg-slate-800
+                                                        "
+                                                    >
+
+                                                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                                                            Tampilkan nilai ke siswa
+                                                        </span>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowScore(!showScore)}
+                                                            className={`
+                                                                relative
+                                                                inline-flex
+                                                                h-7
+                                                                w-12
+                                                                items-center
+                                                                rounded-full
+                                                                transition-colors
+                                                                duration-200
+                                                                ${showScore
+                                                                    ? 'bg-indigo-600'
+                                                                    : 'bg-slate-300 dark:bg-slate-600'
+                                                                }
+                                                            `}
+                                                        >
+
+                                                            <span
+                                                                className={`
+                                                                    inline-block
+                                                                    h-5
+                                                                    w-5
+                                                                    transform
+                                                                    rounded-full
+                                                                    bg-white
+                                                                    transition-transform
+                                                                    duration-200
+                                                                    ${showScore
+                                                                        ? 'translate-x-6'
+                                                                        : 'translate-x-1'
+                                                                    }
+                                                                `}
+                                                            />
+
+                                                        </button>
+
+                                                    </div>
+
+                                                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                                        {showScore
+                                                            ? 'Siswa dapat melihat nilai mereka'
+                                                            : 'Nilai disembunyikan dari siswa'}
+                                                    </p>
 
                                                 </div>
 

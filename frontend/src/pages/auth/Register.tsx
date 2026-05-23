@@ -565,7 +565,7 @@ function Register() {
                     <div className="px-10 text-center text-white">
 
                         <h2 className="mb-4 text-4xl font-bold">
-                            Grammar Checker
+                            JenggalaTalks
                         </h2>
 
                         <p className="text-lg text-indigo-100">

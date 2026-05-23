@@ -4,12 +4,21 @@ import {
     useParams
 } from 'react-router-dom'
 
+import {
+    EyeOff,
+    Clock
+} from 'lucide-react'
+
 import DashboardLayout
 from '../../../../components/layout/DashboardLayout'
 
 import {
     getSubmissionDetail
 } from '../../../../api/studentApi'
+
+import type {
+    SubmissionDetailResponse
+} from '../../../../types/teacher'
 
 function SubmissionDetail() {
 
@@ -19,7 +28,7 @@ function SubmissionDetail() {
         useState(true)
 
     const [data, setData] =
-        useState<any>(null)
+        useState<SubmissionDetailResponse | null>(null)
 
     useEffect(() => {
 
@@ -80,40 +89,214 @@ function SubmissionDetail() {
 
                     <div className="space-y-6">
 
+                        {/* SCORE HIDDEN BANNER */}
+                        {data.score_hidden && (
+
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-amber-200
+                                    bg-amber-50
+                                    p-5
+                                    dark:border-amber-900/40
+                                    dark:bg-amber-950/20
+                                "
+                            >
+
+                                <div className="flex items-start gap-3">
+
+                                    <div
+                                        className="
+                                            flex
+                                            h-10
+                                            w-10
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-amber-100
+                                            text-amber-600
+                                            dark:bg-amber-900/40
+                                            dark:text-amber-400
+                                        "
+                                    >
+                                        <EyeOff size={20} />
+                                    </div>
+
+                                    <div>
+
+                                        <h3 className="font-semibold text-amber-800 dark:text-amber-300">
+                                            Nilai Belum Ditampilkan
+                                        </h3>
+
+                                        <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                                            Guru belum mengaktifkan tampilan nilai untuk tugas ini.
+                                            Anda masih dapat melihat koreksi grammar dan feedback.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+                        {/* AWAITING REVIEW BANNER */}
+                        {!data.score_hidden && data.rubric_status === 'awaiting_review' && (
+
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-blue-200
+                                    bg-blue-50
+                                    p-5
+                                    dark:border-blue-900/40
+                                    dark:bg-blue-950/20
+                                "
+                            >
+
+                                <div className="flex items-start gap-3">
+
+                                    <div
+                                        className="
+                                            flex
+                                            h-10
+                                            w-10
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            bg-blue-100
+                                            text-blue-600
+                                            dark:bg-blue-900/40
+                                            dark:text-blue-400
+                                        "
+                                    >
+                                        <Clock size={20} />
+                                    </div>
+
+                                    <div>
+
+                                        <h3 className="font-semibold text-blue-800 dark:text-blue-300">
+                                            Menunggu Penilaian Guru
+                                        </h3>
+
+                                        <p className="mt-1 text-sm text-blue-700 dark:text-blue-400">
+                                            Submission Anda sedang menunggu penilaian dari guru.
+                                            Nilai final akan muncul setelah guru menyelesaikan review.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
                         {/* SCORE */}
-                        <div className="grid gap-4 md:grid-cols-3">
+                        {!data.score_hidden && (
 
-                            <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
-                                <p className="text-sm text-slate-500">
-                                    Score
-                                </p>
+                            <div className="grid gap-4 md:grid-cols-3">
 
-                                <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
-                                    {data.score}
-                                </h3>
+                                <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
+                                    <p className="text-sm text-slate-500">
+                                        Score
+                                    </p>
+
+                                    <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
+                                        {data.score ?? '-'}
+                                    </h3>
+                                </div>
+
+                                <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
+                                    <p className="text-sm text-slate-500">
+                                        Grade
+                                    </p>
+
+                                    <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
+                                        {data.grade ?? '-'}
+                                    </h3>
+                                </div>
+
+                                <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
+                                    <p className="text-sm text-slate-500">
+                                        Errors
+                                    </p>
+
+                                    <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
+                                        {data.error_count}
+                                    </h3>
+                                </div>
+
                             </div>
 
-                            <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
-                                <p className="text-sm text-slate-500">
-                                    Grade
-                                </p>
+                        )}
 
-                                <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
-                                    {data.grade}
+                        {/* RUBRIC SCORES (if complete and not hidden) */}
+                        {!data.score_hidden && data.rubric_status === 'complete' && data.score_total && (
+
+                            <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
+
+                                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                                    Rubric Scores
                                 </h3>
+
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                                    <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Grammar
+                                        </p>
+                                        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-white">
+                                            {data.score_grammar ?? '-'}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Mechanics
+                                        </p>
+                                        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-white">
+                                            {data.score_mechanics ?? '-'}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Content
+                                        </p>
+                                        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-white">
+                                            {data.score_content ?? '-'}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Unity
+                                        </p>
+                                        <p className="mt-1 text-2xl font-bold text-slate-800 dark:text-white">
+                                            {data.score_unity ?? '-'}
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                                <div className="mt-4 rounded-xl bg-indigo-50 p-4 dark:bg-indigo-950/20">
+                                    <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                                        Total Score
+                                    </p>
+                                    <p className="mt-1 text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+                                        {data.score_total} / 20
+                                    </p>
+                                </div>
+
                             </div>
 
-                            <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
-                                <p className="text-sm text-slate-500">
-                                    Errors
-                                </p>
-
-                                <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
-                                    {data.error_count}
-                                </h3>
-                            </div>
-
-                        </div>
+                        )}
 
                         {/* ORIGINAL */}
                         <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">

@@ -61,8 +61,8 @@ class SubmitResponse(BaseModel):
     original_text: str
     corrected_text: str
     errors: list[dict]
-    score: int
-    grade: str
+    score: Optional[int]
+    grade: Optional[str]
     word_count: int
     error_count: int
     error_breakdown: dict[str, int]
@@ -73,11 +73,12 @@ class SubmitResponse(BaseModel):
     rubric_status: str
     score_grammar: Optional[int] = None
     score_mechanics: Optional[int] = None
+    score_hidden: bool = False
 
 class SubmissionListItem(BaseModel):
     id: str
-    score: int
-    grade: str
+    score: Optional[int]
+    grade: Optional[str]
     word_count: int
     error_count: int
     created_at: str
@@ -86,6 +87,7 @@ class SubmissionListItem(BaseModel):
     score_grammar: Optional[int] = None
     score_mechanics: Optional[int] = None
     score_total: Optional[int] = None
+    score_hidden: bool = False
 
 class SubmissionListResponse(BaseModel):
     items: List[SubmissionListItem]
@@ -98,8 +100,8 @@ class SubmissionDetailResponse(BaseModel):
     original_text: str
     corrected_text: str
     errors: list[dict]
-    score: int
-    grade: str
+    score: Optional[int]
+    grade: Optional[str]
     word_count: int
     error_count: int
     error_breakdown: dict[str, int]
@@ -115,6 +117,7 @@ class SubmissionDetailResponse(BaseModel):
     score_unity: Optional[int] = None
     score_total: Optional[int] = None
     reviewed_at: Optional[str] = None
+    score_hidden: bool = False
 
 class DashboardItem(BaseModel):
     submission_id: str

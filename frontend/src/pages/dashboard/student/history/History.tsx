@@ -4,7 +4,8 @@ import {
     Clock3,
     ChevronRight,
     FileText,
-    Sparkles
+    Sparkles,
+    EyeOff
 } from 'lucide-react'
 
 import { useNavigate } from 'react-router-dom'
@@ -16,6 +17,10 @@ import {
     getSubmissionHistory
 } from '../../../../api/studentApi'
 
+import type {
+    SubmissionListItem
+} from '../../../../types/teacher'
+
 function History() {
 
     const navigate = useNavigate()
@@ -24,7 +29,7 @@ function History() {
         useState(true)
 
     const [histories, setHistories] =
-        useState<any[]>([])
+        useState<SubmissionListItem[]>([])
 
     /* FETCH HISTORY */
     useEffect(() => {
@@ -56,8 +61,17 @@ function History() {
 
     /* GRADE COLOR */
     const getGradeStyle = (
-        grade: string
+        grade: string | null
     ) => {
+
+        if (!grade) {
+            return `
+                bg-slate-100
+                text-slate-600
+                dark:bg-slate-800
+                dark:text-slate-400
+            `
+        }
 
         switch (grade) {
 
@@ -96,14 +110,15 @@ function History() {
     }
 
     /* AVG SCORE */
+    const visibleScores = histories.filter(item => !item.score_hidden && item.score !== null)
     const averageScore =
-        histories.length > 0
+        visibleScores.length > 0
             ? Math.round(
-                histories.reduce(
+                visibleScores.reduce(
                     (acc, item) =>
-                        acc + item.score,
+                        acc + (item.score ?? 0),
                     0
-                ) / histories.length
+                ) / visibleScores.length
             )
             : 0
 
@@ -195,7 +210,7 @@ function History() {
                                     </p>
 
                                     <h3 className="text-2xl font-bold text-slate-800 dark:text-white">
-                                        {averageScore}
+                                        {visibleScores.length > 0 ? averageScore : '-'}
                                     </h3>
 
                                 </div>
@@ -329,30 +344,58 @@ function History() {
                                     {/* RIGHT */}
                                     <div className="flex items-center gap-3">
 
-                                        <div className="text-right">
+                                        {item.score_hidden ? (
 
-                                            <p className="text-sm text-slate-400">
-                                                Score
-                                            </p>
+                                            <div className="flex items-center gap-2 text-slate-400">
 
-                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">
-                                                {item.score}
-                                            </h3>
+                                                <EyeOff size={18} />
 
-                                        </div>
+                                                <div className="text-right">
 
-                                        <div
-                                            className={`
-                                                rounded-xl
-                                                px-3
-                                                py-2
-                                                text-sm
-                                                font-bold
-                                                ${getGradeStyle(item.grade)}
-                                            `}
-                                        >
-                                            {item.grade}
-                                        </div>
+                                                    <p className="text-xs text-slate-400">
+                                                        Score
+                                                    </p>
+
+                                                    <h3 className="text-xl font-bold text-slate-400">
+                                                        -
+                                                    </h3>
+
+                                                </div>
+
+                                            </div>
+
+                                        ) : (
+
+                                            <>
+
+                                                <div className="text-right">
+
+                                                    <p className="text-sm text-slate-400">
+                                                        Score
+                                                    </p>
+
+                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+                                                        {item.score ?? '-'}
+                                                    </h3>
+
+                                                </div>
+
+                                                <div
+                                                    className={`
+                                                        rounded-xl
+                                                        px-3
+                                                        py-2
+                                                        text-sm
+                                                        font-bold
+                                                        ${getGradeStyle(item.grade)}
+                                                    `}
+                                                >
+                                                    {item.grade ?? '-'}
+                                                </div>
+
+                                            </>
+
+                                        )}
 
                                         <ChevronRight
                                             size={20}
@@ -366,6 +409,21 @@ function History() {
                                     </div>
 
                                 </div>
+
+                                {/* HIDDEN BADGE */}
+                                {item.score_hidden && (
+
+                                    <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+
+                                        <EyeOff size={14} />
+
+                                        <span>
+                                            Nilai disembunyikan oleh guru
+                                        </span>
+
+                                    </div>
+
+                                )}
 
                             </button>
                         ))}

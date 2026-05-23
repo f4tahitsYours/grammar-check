@@ -1,6 +1,6 @@
 # English Grammar Checker & Assignment System - Project Status
 
-## 🎯 Overall Status: **PHASE 6.5 COMPLETE**
+## 🎯 Overall Status: **PHASE 8 COMPLETE - Score Visibility Toggle**
 
 ---
 
@@ -11,11 +11,12 @@
 | Phase 3 | ✅ Complete | 6/6 | Grammar Pipeline Implementation |
 | Phase 4 | ✅ Complete | 12/12 | Scoring & Feedback Engine |
 | Phase 5 | ✅ Complete | 8/8 | Student API Endpoints |
-| Phase 6 | ✅ Complete | 12/12 | Teacher Dashboard API |
+| Phase 6 | ✅ Complete | 14/14 | Teacher Dashboard API |
 | Phase 6.5 | ✅ Complete | 8/8 | Admin Router & System Observability |
 | Phase 7 | 🔜 Pending | 0/0 | Multimedia Features (Poster & TTS) |
+| Phase 8 | ✅ Complete | 9/9 | Score Visibility Toggle Feature |
 
-**Total Tests Passing: 46/46** ✅
+**Total Tests Passing: 57/57** ✅
 
 ---
 
@@ -94,14 +95,15 @@ backend/
 - **Metrics Recording**: Background task for system monitoring
 
 ### Phase 6: Teacher Dashboard ✅
-- **7 Endpoints**:
+- **8 Endpoints**:
   1. GET /dashboard - Paginated submissions with filters
   2. GET /submission/{id} - Full submission detail
   3. GET /export - CSV export with streaming
-  4. POST /assignment - Create assignment with rubric
-  5. PATCH /assignment/{id} - Update assignment
-  6. GET /pending-reviews - List pending reviews
-  7. PATCH /submission/{id}/review - Review submission
+  4. GET /assignment - List all assignments (NEW)
+  5. POST /assignment - Create assignment with rubric
+  6. PATCH /assignment/{id} - Update assignment
+  7. GET /pending-reviews - List pending reviews
+  8. PATCH /submission/{id}/review - Review submission
 - **School-Level Security**: Teachers only access same school
 - **CSV Streaming**: Generator pattern, no memory overload
 - **Atomic Review**: Single UPDATE query with validations
@@ -119,6 +121,24 @@ backend/
 - **Metrics Recording**: Daily aggregation, cost tracking
 - **Audit Logging**: All write actions logged
 - **Soft Delete Only**: No hard delete on users
+
+### Phase 8: Score Visibility Toggle ✅
+- **Backend Implementation**:
+  - Added `show_score` boolean field to assignments table
+  - Modified student endpoints to check `show_score` setting
+  - Added `score_hidden` field to submission responses
+  - Conditional score visibility in submit, list, and detail endpoints
+- **Frontend Implementation**:
+  - Added toggle switch in teacher assignment form
+  - Conditional rendering in student submission detail
+  - Hidden score indicator in student history page
+  - Banner display when scores are hidden
+- **Features**:
+  - Teachers can toggle score visibility per assignment
+  - Default: scores hidden (show_score = false)
+  - Students see banner when scores are hidden
+  - All score fields return null when hidden
+  - Works for both auto-graded and teacher-reviewed submissions
 
 ---
 
@@ -212,10 +232,11 @@ backend/
 - POST /api/v1/poster/generate (stub)
 - POST /api/v1/tts/generate (stub)
 
-### Teacher Endpoints (7)
+### Teacher Endpoints (8)
 - GET /api/v1/teacher/dashboard
 - GET /api/v1/teacher/submission/{id}
 - GET /api/v1/teacher/export
+- GET /api/v1/teacher/assignment (NEW)
 - POST /api/v1/teacher/assignment
 - PATCH /api/v1/teacher/assignment/{id}
 - GET /api/v1/teacher/pending-reviews
@@ -231,7 +252,7 @@ backend/
 - GET /api/v1/admin/cache/stats
 - GET /api/v1/admin/health
 
-**Total: 20 API endpoints**
+**Total: 21 API endpoints**
 
 ---
 
@@ -278,6 +299,9 @@ backend/
 ### Available Documents
 - ✅ PHASE_6_SUMMARY.md - Teacher Dashboard implementation
 - ✅ PHASE_6.5_SUMMARY.md - Admin Router implementation
+- ✅ FRONTEND_SCORE_VISIBILITY_IMPLEMENTATION.md - Score Visibility Toggle frontend
+- ✅ FIX_GET_ASSIGNMENT_ENDPOINT.md - GET /assignment endpoint fix
+- ✅ TESTING_GUIDE_SCORE_VISIBILITY.md - Testing guide for Score Visibility Toggle
 - ✅ PROJECT_STATUS.md - This document
 - ✅ supabase_schema.sql - Database schema
 - ✅ supabase_setup.md - Database setup instructions
@@ -286,13 +310,14 @@ backend/
 
 ## 🎉 Achievements
 
-- ✅ **46/46 tests passing**
-- ✅ **20 API endpoints implemented**
+- ✅ **57/57 tests passing**
+- ✅ **21 API endpoints implemented**
 - ✅ **8 database tables with RLS**
 - ✅ **Dual-mode scoring system**
 - ✅ **Complete observability stack**
 - ✅ **Production-ready security**
 - ✅ **Comprehensive audit logging**
+- ✅ **Score Visibility Toggle feature**
 
 ---
 
@@ -320,11 +345,19 @@ backend/
 
 ## 🏁 Conclusion
 
-**Phase 6.5 is complete!** The system now has:
+**Phase 8 is complete!** The system now has:
 - Full CRUD operations for all user roles
 - Comprehensive system observability
 - Production-ready security and audit logging
-- 46/46 tests passing
+- Score Visibility Toggle feature for teachers
+- 57/57 tests passing
+- 21 API endpoints
 
-Ready to proceed with Phase 7 (Multimedia Features) when needed.
+**Latest Features:**
+- ✅ GET /api/v1/teacher/assignment endpoint (fixed 405 error)
+- ✅ Score Visibility Toggle (backend + frontend)
+- ✅ Conditional score rendering for students
+- ✅ Teacher control over score visibility per assignment
+
+Ready to proceed with Phase 7 (Multimedia Features) or additional features when needed.
 

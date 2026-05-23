@@ -169,15 +169,38 @@ async def submit_text(
         f"user_id={current_user.user_id}, mode={'B' if request.assignment_id else 'A'}"
     )
     
-    # Step 9: Return response
+    # Step 9: Check score visibility for assignment submissions
+    score_hidden = False
+    response_score = score
+    response_grade = grade
+    response_score_grammar = score_grammar
+    response_score_mechanics = score_mechanics
+    
+    if request.assignment_id is not None:
+        # Fetch assignment to check show_score
+        assignment_result = supabase.table("assignments").select(
+            "show_score"
+        ).eq("id", str(request.assignment_id)).execute()
+        
+        if assignment_result.data:
+            show_score = assignment_result.data[0].get("show_score", False)
+            if not show_score:
+                # Hide scores from student
+                score_hidden = True
+                response_score = None
+                response_grade = None
+                response_score_grammar = None
+                response_score_mechanics = None
+    
+    # Step 10: Return response
     return SubmitResponse(
         submission_id=submission_id,
         source=pipeline_result.source,
         original_text=request.text,
         corrected_text=pipeline_result.corrected_text,
         errors=pipeline_result.errors,
-        score=score,
-        grade=grade,
+        score=response_score,
+        grade=response_grade,
         word_count=pipeline_result.word_count,
         error_count=pipeline_result.error_count,
         error_breakdown=pipeline_result.error_breakdown,
@@ -186,8 +209,9 @@ async def submit_text(
         fallback_used=pipeline_result.fallback_used,
         warning=warning,
         rubric_status=rubric_status,
-        score_grammar=score_grammar,
-        score_mechanics=score_mechanics,
+        score_grammar=response_score_grammar,
+        score_mechanics=response_score_mechanics,
+        score_hidden=score_hidden,
     )
 
 
@@ -216,29 +240,48 @@ async def get_submissions(
     # Get paginated data
     result = supabase.table("submissions").select(
         "id, score, grade, word_count, error_count, created_at, "
-        "assignment_id, rubric_status, score_grammar, score_mechanics, score_total"
+        "assignment_id, rubric_status, score_grammar, score_mechanics, score_total, "
+        "assignments(show_score)"
     ).eq(
         "student_id", current_user.user_id
     ).order(
         "created_at", desc=True
     ).range(offset, offset + limit - 1).execute()
     
-    items = [
-        SubmissionListItem(
+    items = []
+    for row in result.data:
+        # Check score visibility
+        score_hidden = False
+        display_score = row["score"]
+        display_grade = row["grade"]
+        display_score_grammar = row.get("score_grammar")
+        display_score_mechanics = row.get("score_mechanics")
+        display_score_total = row.get("score_total")
+        
+        if row.get("assignment_id") and row.get("assignments"):
+            show_score = row["assignments"].get("show_score", False)
+            if not show_score:
+                score_hidden = True
+                display_score = None
+                display_grade = None
+                display_score_grammar = None
+                display_score_mechanics = None
+                display_score_total = None
+        
+        items.append(SubmissionListItem(
             id=str(row["id"]),
-            score=row["score"],
-            grade=row["grade"],
+            score=display_score,
+            grade=display_grade,
             word_count=row["word_count"],
             error_count=row["error_count"],
             created_at=row["created_at"],
             assignment_id=str(row["assignment_id"]) if row.get("assignment_id") else None,
             rubric_status=row["rubric_status"],
-            score_grammar=row.get("score_grammar"),
-            score_mechanics=row.get("score_mechanics"),
-            score_total=row.get("score_total"),
-        )
-        for row in result.data
-    ]
+            score_grammar=display_score_grammar,
+            score_mechanics=display_score_mechanics,
+            score_total=display_score_total,
+            score_hidden=score_hidden,
+        ))
     
     return SubmissionListResponse(
         items=items,
@@ -259,7 +302,9 @@ async def get_submission_detail(
     """
     supabase = get_supabase_client()
     
-    result = supabase.table("submissions").select("*").eq(
+    result = supabase.table("submissions").select(
+        "*, assignments(show_score)"
+    ).eq(
         "id", submission_id
     ).execute()
     
@@ -279,18 +324,40 @@ async def get_submission_detail(
             detail="Submission not found"
         )
     
+    # Check score visibility
+    score_hidden = False
+    display_score = submission["score"]
+    display_grade = submission["grade"]
+    display_score_grammar = submission.get("score_grammar")
+    display_score_mechanics = submission.get("score_mechanics")
+    display_score_content = submission.get("score_content")
+    display_score_unity = submission.get("score_unity")
+    display_score_total = None
+    
     # Hide score_total if not complete
-    score_total = None
     if submission["rubric_status"] == "complete":
-        score_total = submission.get("score_total")
+        display_score_total = submission.get("score_total")
+    
+    # Check assignment show_score setting
+    if submission.get("assignment_id") and submission.get("assignments"):
+        show_score = submission["assignments"].get("show_score", False)
+        if not show_score:
+            score_hidden = True
+            display_score = None
+            display_grade = None
+            display_score_grammar = None
+            display_score_mechanics = None
+            display_score_content = None
+            display_score_unity = None
+            display_score_total = None
     
     return SubmissionDetailResponse(
         id=str(submission["id"]),
         original_text=submission["original_text"],
         corrected_text=submission["corrected_text"],
         errors=submission["errors_json"],
-        score=submission["score"],
-        grade=submission["grade"],
+        score=display_score,
+        grade=display_grade,
         word_count=submission["word_count"],
         error_count=submission["error_count"],
         error_breakdown=submission["error_breakdown"],
@@ -300,12 +367,13 @@ async def get_submission_detail(
         created_at=submission["created_at"],
         assignment_id=str(submission["assignment_id"]) if submission.get("assignment_id") else None,
         rubric_status=submission["rubric_status"],
-        score_grammar=submission.get("score_grammar"),
-        score_mechanics=submission.get("score_mechanics"),
-        score_content=submission.get("score_content"),
-        score_unity=submission.get("score_unity"),
-        score_total=score_total,
+        score_grammar=display_score_grammar,
+        score_mechanics=display_score_mechanics,
+        score_content=display_score_content,
+        score_unity=display_score_unity,
+        score_total=display_score_total,
         reviewed_at=submission.get("reviewed_at"),
+        score_hidden=score_hidden,
     )
 
 
