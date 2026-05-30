@@ -18,6 +18,8 @@ import SchoolsPage from './pages/dashboard/admin/SchoolsPage'
 import UsersPage from './pages/dashboard/admin/UsersPage'
 import AuditLogPage from './pages/dashboard/admin/AuditLogPage'
 
+import ProtectedRoute from './components/auth/ProtectedRoute'
+
 function App() {
 
   return (
@@ -44,64 +46,112 @@ function App() {
       {/* STUDENT */}
       <Route
         path="/dashboard/student/"
-        element={<StudentDashboard />}
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentDashboard />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/student/history/"
-        element={<History />}
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <History />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/student/assignment/"
-        element={<AssignmentStudent />}
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <AssignmentStudent />
+          </ProtectedRoute>
+        }
       />
 
       {/* TEACHER */}
       <Route
         path="/dashboard/teacher/"
-        element={<TeacherDashboard />}
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <TeacherDashboard />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/teacher/assignment/"
-        element={<TeacherAssignment />}
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <TeacherAssignment />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/teacher/submission/"
-        element={<TeacherSubmission />}
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <TeacherSubmission />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/teacher/history/"
-        element={<TeacherHistory />}
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <TeacherHistory />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/teacher/reports/"
-        element={<TeacherReports />}
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <TeacherReports />
+          </ProtectedRoute>
+        }
       />
 
       {/* ADMIN */}
       <Route
         path="/dashboard/admin/"
-        element={<AdminDashboard />}
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/admin/school/"
-        element={<SchoolsPage />}
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <SchoolsPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/admin/users/"
-        element={<UsersPage />}
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <UsersPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/dashboard/admin/audit-log/"
-        element={<AuditLogPage />}
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AuditLogPage />
+          </ProtectedRoute>
+        }
       />
 
     </Routes>

@@ -6,6 +6,7 @@ import {
     GraduationCap,
     Shield
 } from 'lucide-react'
+import { useAuth } from '../../hooks/auth/useAuth'
 
 type NavbarProps = {
     setOpen: (value: boolean) => void
@@ -16,6 +17,8 @@ function Navbar({ setOpen }: NavbarProps) {
     const [dropdownOpen] = useState(false)
     // const [dropdownOpen, setDropdownOpen] = useState(false)
 
+    const { user } = useAuth()
+
     // USER DATA
     const [userName, setUserName] = useState('')
     const [userRole, setUserRole] = useState('')
@@ -24,27 +27,20 @@ function Navbar({ setOpen }: NavbarProps) {
 
     useEffect(() => {
 
-        const name =
-            localStorage.getItem('user_name') || 'User'
+        if (user) {
+            setUserName(user.name)
+            setUserRole(user.role)
+            setUserEmail(user.email)
+            // class_name is not in AuthUser, keep from localStorage for now
+            setUserClass(localStorage.getItem('user_class') || '-')
+        } else {
+            setUserName('User')
+            setUserRole('Student')
+            setUserEmail('-')
+            setUserClass('-')
+        }
 
-        const role =
-            localStorage.getItem('user_role') || 'Student'
-
-        const email =
-            localStorage.getItem('user_email') || '-'
-
-        const className =
-            localStorage.getItem('user_class') || '-'
-
-        setUserName(name)
-
-        setUserRole(role)
-
-        setUserEmail(email)
-
-        setUserClass(className)
-
-    }, [])
+    }, [user])
 
     // AVATAR INITIAL
     const initial = userName.charAt(0).toUpperCase()

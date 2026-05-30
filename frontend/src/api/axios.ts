@@ -1,4 +1,5 @@
 import axios from "axios"
+import { getToken } from "../context/tokenStore"
 
 const api = axios.create({
     baseURL: "http://localhost:8000/api/v1",
@@ -9,8 +10,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
 
-    const token =
-        localStorage.getItem("access_token")
+    const token = getToken()
 
     if (token) {
 

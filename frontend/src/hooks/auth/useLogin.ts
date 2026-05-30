@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
 
 import { loginUser } from '../../api/service/auth/authApi'
+import { useAuth } from './useAuth'
 
 import {
     passwordRegex,
@@ -12,6 +13,7 @@ import {
 export function useLogin() {
 
     const navigate = useNavigate()
+    const { login } = useAuth()
 
     // FORM
     const [email, setEmail] = useState('')
@@ -97,31 +99,14 @@ export function useLogin() {
                 password
             })
 
-            // SAVE LOGIN
-            localStorage.setItem(
-                'access_token',
-                data.access_token
-            )
-
-            localStorage.setItem(
-                'user_role',
-                data.role
-            )
-
-            localStorage.setItem(
-                'user_id',
-                data.user_id
-            )
-
-            localStorage.setItem(
-                'user_name',
-                data.name
-            )
-
-            localStorage.setItem(
-                'user_email',
-                data.email
-            )
+            // SAVE LOGIN via AuthContext
+            login({
+                user_id: data.user_id,
+                email: data.email,
+                name: data.name,
+                role: data.role,
+                access_token: data.access_token
+            })
 
             // SUCCESS
             await Swal.fire({

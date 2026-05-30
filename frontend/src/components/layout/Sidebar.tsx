@@ -13,6 +13,7 @@ import {
 } from 'react-router-dom'
 
 import Swal from 'sweetalert2'
+import { useAuth } from '../../hooks/auth/useAuth'
 
 type SidebarProps = {
     open: boolean
@@ -23,10 +24,10 @@ function Sidebar({ open, setOpen }: SidebarProps) {
 
     const navigate = useNavigate()
     const location = useLocation()
+    const { user, logout } = useAuth()
 
     // ROLE USER
-    const role =
-        localStorage.getItem('user_role') || 'student'
+    const role = user?.role || 'student'
 
     // MENU
     const menus =
@@ -102,7 +103,7 @@ function Sidebar({ open, setOpen }: SidebarProps) {
 
             setLogoutLoading(true)
 
-            localStorage.clear()
+            logout()
 
             await Swal.fire({
                 icon: 'success',
