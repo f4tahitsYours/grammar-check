@@ -298,6 +298,23 @@ async def update_user_role(
             detail="Failed to update user role"
         )
     
+    # Sync role ke Supabase Auth user_metadata
+    # Ini memastikan JWT baru akan punya role yang sudah diupdate
+    try:
+        supabase.auth.admin.update_user_by_id(
+            user_id,
+            {"user_metadata": {"role": request.role}}
+        )
+        logger.info(
+            f"Role synced to Supabase Auth: user_id={user_id}, "
+            f"new_role={request.role}"
+        )
+    except Exception as e:
+        logger.warning(
+            f"Failed to sync role to Supabase Auth: user_id={user_id}, "
+            f"error={e}. Database update succeeded."
+        )
+    
     # Log to audit_log
     supabase.table("audit_log").insert({
         "user_id": current_user.user_id,
