@@ -156,3 +156,23 @@ class RubricConfig(BaseModel):
     content_weight: int
     unity_weight: int
     grading_scale: dict[str, str]
+
+class AssignmentRubricInfo(BaseModel):
+    grammar_weight: int
+    mechanics_weight: int
+    content_weight: int
+    unity_weight: int
+
+class StudentAssignmentItem(BaseModel):
+    assignment_id: str
+    title: str
+    description: str
+    class_target: Optional[str] = None
+    is_active: bool
+    created_at: str
+    teacher_name: Optional[str] = None
+    rubric: Optional[AssignmentRubricInfo] = None
+
+class StudentAssignmentListResponse(BaseModel):
+    data: List[StudentAssignmentItem]
+    total: int

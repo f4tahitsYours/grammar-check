@@ -17,6 +17,9 @@ from backend.models.response import (
     SubmissionListResponse,
     SubmissionListItem,
     SubmissionDetailResponse,
+    StudentAssignmentListResponse,
+    StudentAssignmentItem,
+    AssignmentRubricInfo,
 )
 from backend.services.grammar.preprocessor import preprocess
 from backend.services.grammar.pipeline import run_pipeline
@@ -465,3 +468,98 @@ async def generate_submission_tts(
         audio_url = None
     
     return {"audio_url": audio_url}
+
+
+@router.get("/assignments", response_model=StudentAssignmentListResponse)
+async def get_assignments(
+    current_user: UserPayload = Depends(require_student),
+):
+    """
+    Get list of active assignments relevant to the student.
+    
+    Filters assignments by:
+    - is_active = true
+    - Teacher's school_id matches student's school_id
+    - If student has no school_id, returns all active assignments (fallback)
+    
+    Returns assignments with rubric info and teacher name.
+    """
+    supabase = get_supabase_client()
+    
+    # Step 1: Get student's school_id and class_name
+    student_result = supabase.table("users").select(
+        "school_id, class_name"
+    ).eq("id", current_user.user_id).execute()
+    
+    student = student_result.data[0] if student_result.data else {}
+    student_school_id = student.get("school_id")
+    
+    # Step 2: Query assignments with teacher and rubric info
+    query = supabase.table("assignments").select(
+        "id, title, description, class_target, is_active, created_at, "
+        "users!assignments_teacher_id_fkey(name, school_id), "
+        "assignment_rubrics(grammar_weight, mechanics_weight, content_weight, unity_weight)"
+    ).eq("is_active", True).order("created_at", desc=True)
+    
+    result = query.execute()
+    
+    # Step 3: Filter by school_id in Python
+    if student_school_id:
+        # Filter: only assignments from teachers with same school_id
+        assignments = [
+            a for a in result.data
+            if a.get("users") and a["users"].get("school_id") == student_school_id
+        ]
+    else:
+        # Fallback: return all active assignments
+        assignments = result.data
+    
+    # Step 4: Format response
+    items = []
+    for assignment in assignments:
+        # Extract teacher name
+        teacher_name = None
+        if assignment.get("users"):
+            teacher_name = assignment["users"].get("name")
+        
+        # Extract rubric info
+        rubric = None
+        rubric_data = assignment.get("assignment_rubrics")
+        
+        # Handle both list and dict formats from Supabase
+        if rubric_data:
+            if isinstance(rubric_data, list) and len(rubric_data) > 0:
+                rubric_item = rubric_data[0]
+            elif isinstance(rubric_data, dict):
+                rubric_item = rubric_data
+            else:
+                rubric_item = None
+            
+            if rubric_item:
+                rubric = AssignmentRubricInfo(
+                    grammar_weight=rubric_item["grammar_weight"],
+                    mechanics_weight=rubric_item["mechanics_weight"],
+                    content_weight=rubric_item["content_weight"],
+                    unity_weight=rubric_item["unity_weight"]
+                )
+        
+        items.append(StudentAssignmentItem(
+            assignment_id=str(assignment["id"]),
+            title=assignment["title"],
+            description=assignment["description"],
+            class_target=assignment.get("class_target"),
+            is_active=assignment["is_active"],
+            created_at=assignment["created_at"],
+            teacher_name=teacher_name,
+            rubric=rubric
+        ))
+    
+    logger.info(
+        f"Student {current_user.user_id} fetched {len(items)} assignments "
+        f"(school_id={student_school_id})"
+    )
+    
+    return StudentAssignmentListResponse(
+        data=items,
+        total=len(items)
+    )
