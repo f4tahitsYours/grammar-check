@@ -17,3 +17,25 @@ node_modules/
 
 # VSCode
 .vscode/
+
+# Debug & temp files
+*.sql
+FIX_*.md
+DEBUG_*.md
+QUICK_*.md
+CHECK_*.md
+DATABASE_*.md
+CARA_*.md
+ENDPOINT_*.md
+JWT_*.md
+FK_*.md
+ADMIN_ROLE_*.md
+TASK_*.md
+TEST_*.md
+SOLUSI_*.md
+AUTO_*.md
+run.bat
+frontend/frontend_structure.txt
+backend/check_login.py
+backend/debug_user_role.py
+backend/test_*_endpoint.py
