@@ -5,16 +5,25 @@ import {
     generateTTS
 } from '../../api/service/student/studentApi'
 
+import { useSearchParams } from 'react-router-dom'
+
 import api from '../../api/axios'
 import { useAudioPlayer } from './useAudioPlayer'
 
 type AssignmentNote = {
+    assignment_id?: string
     title: string
     description: string
     created_at: string
 }
 
 export function useStudentDashboard() {
+
+    const [searchParams] = useSearchParams()
+
+    const assignmentId =
+        searchParams.get('assignment_id') || ''
+        
 
     const [text, setText] = useState('')
     const [loading, setLoading] = useState(false)
@@ -32,23 +41,69 @@ export function useStudentDashboard() {
 
     const [showScore, setShowScore] = useState(false)
 
-    // ✅ FIX: assignment note (AUTO FETCH)
-    const [assignmentNote, setAssignmentNote] = useState<AssignmentNote | null>(null)
+    const [assignmentNote, setAssignmentNote] =
+        useState<AssignmentNote | null>(null)
+
+    const [latestAssignments, setLatestAssignments] =
+        useState<AssignmentNote[]>([])
 
     const audio = useAudioPlayer()
 
-    // AUTO FETCH LATEST ASSIGNMENT
+    // FETCH ASSIGNMENT
     useEffect(() => {
-        const fetchLatestAssignment = async () => {
+
+        const fetchAssignments = async () => {
+
             try {
-                const res = await api.get('/student/assignments')
+
+                const res =
+                    await api.get('/student/assignments')
 
                 const data = res.data?.data
 
-                if (Array.isArray(data) && data.length > 0) {
+                if (!Array.isArray(data)) return
+
+                // RECENT ASSIGNMENTS
+                setLatestAssignments(
+                    data
+                        .slice(0, 5)
+                        .map((item: any) => ({
+                            assignment_id: item.assignment_id,
+                            title: item.title,
+                            description: item.description,
+                            created_at: item.created_at
+                        }))
+                )
+
+                // ASSIGNMENT NOTE BERDASARKAN ID URL
+                if (assignmentId) {
+
+                    const selected =
+                        data.find(
+                            (item: any) =>
+                                item.assignment_id === assignmentId
+                        )
+
+                    if (selected) {
+
+                        setAssignmentNote({
+                            assignment_id: selected.assignment_id,
+                            title: selected.title,
+                            description: selected.description,
+                            created_at: selected.created_at
+                        })
+
+                        return
+                    }
+                }
+
+                // DEFAULT = ASSIGNMENT TERBARU
+                if (data.length > 0) {
+
                     const latest = data[0]
 
                     setAssignmentNote({
+                        assignment_id: latest.assignment_id,
                         title: latest.title,
                         description: latest.description,
                         created_at: latest.created_at
@@ -56,21 +111,31 @@ export function useStudentDashboard() {
                 }
 
             } catch (err) {
-                console.log('failed fetch assignment', err)
+
+                console.log(
+                    'failed fetch assignment',
+                    err
+                )
             }
         }
 
-        fetchLatestAssignment()
-    }, [])
+        fetchAssignments()
+
+    }, [assignmentId])
 
     // AUTO RESIZE
     const resizeTextarea = () => {
+
         if (!textareaRef.current) return
+
         textareaRef.current.style.height = 'auto'
-        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+        textareaRef.current.style.height =
+            `${textareaRef.current.scrollHeight}px`
     }
 
-    const handleTextarea = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleTextarea = (
+        e: React.ChangeEvent<HTMLTextAreaElement>
+    ) => {
         setText(e.target.value)
     }
 
@@ -79,14 +144,26 @@ export function useStudentDashboard() {
     }, [text])
 
     useEffect(() => {
-        window.addEventListener('resize', resizeTextarea)
-        return () => window.removeEventListener('resize', resizeTextarea)
+
+        window.addEventListener(
+            'resize',
+            resizeTextarea
+        )
+
+        return () =>
+            window.removeEventListener(
+                'resize',
+                resizeTextarea
+            )
+
     }, [])
 
     // CLEAR
     const handleClear = () => {
+
         setText('')
         setHasResult(false)
+
         setSubmissionId('')
         setCorrectedText('')
         setFeedback('')
@@ -97,51 +174,90 @@ export function useStudentDashboard() {
         audio.resetAudio()
 
         if (textareaRef.current) {
-            textareaRef.current.style.height = '160px'
+            textareaRef.current.style.height =
+                '160px'
         }
     }
 
     // CHECK GRAMMAR
     const handleCheckGrammar = async () => {
+
         try {
+
             setLoading(true)
 
-            const data = await submitGrammar(
-                text,
-                '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+            console.log('assignmentId:', assignmentId)
+            console.log('text:', text)
+
+            const data =
+                await submitGrammar(
+                    text,
+                    assignmentId
+                )
+
+            setSubmissionId(
+                data.submission_id
             )
 
-            setSubmissionId(data.submission_id)
-            setCorrectedText(data.corrected_text)
-            setFeedback(data.feedback)
-            setDiffHtml(data.diff_html)
+            setCorrectedText(
+                data.corrected_text
+            )
+
+            setFeedback(
+                data.feedback
+            )
+
+            setDiffHtml(
+                data.diff_html
+            )
 
             const hasScore =
                 data.score !== undefined &&
                 data.grade !== undefined
 
-            setShowScore(hasScore)
+            setShowScore(
+                hasScore
+            )
 
-            setScore(hasScore ? data.score : 0)
-            setGrade(hasScore ? data.grade : '-')
+            setScore(
+                hasScore
+                    ? data.score
+                    : 0
+            )
+
+            setGrade(
+                hasScore
+                    ? data.grade
+                    : '-'
+            )
 
             setHasResult(true)
 
         } catch (error) {
+
             console.log(error)
+
         } finally {
+
             setLoading(false)
         }
     }
 
     // AUDIO
     const handleToggleAudio = async () => {
+
         if (!submissionId) return
 
-        const url = await generateTTS(submissionId)
+        const url =
+            await generateTTS(
+                submissionId
+            )
 
         audio.setAudioUrl(url)
-        audio.setShowAudioControl(true)
+
+        audio.setShowAudioControl(
+            true
+        )
 
         requestAnimationFrame(() => {
             audio.playAudio()
@@ -150,17 +266,28 @@ export function useStudentDashboard() {
 
     // POSTER
     const handleGeneratePoster = async () => {
+
         if (!submissionId) return
 
-        const imageUrl = await generatePoster(submissionId)
-        window.open(imageUrl, '_blank')
+        const imageUrl =
+            await generatePoster(
+                submissionId
+            )
+
+        window.open(
+            imageUrl,
+            '_blank'
+        )
     }
 
     return {
+
         text,
         setText,
+
         loading,
         hasResult,
+
         textareaRef,
 
         correctedText,
@@ -170,7 +297,9 @@ export function useStudentDashboard() {
         diffHtml,
 
         showScore,
+
         assignmentNote,
+        latestAssignments,
 
         handleTextarea,
         handleClear,

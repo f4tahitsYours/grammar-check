@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import AdminLogin from './pages/auth/AdminLogin'
 
 import StudentDashboard from './pages/dashboard/student/StudentDashboard'
 import History from './pages/dashboard/student/history/History'
@@ -42,6 +43,10 @@ function App() {
         path="/register"
         element={<Register />}
       />
+
+      <Route 
+        path="/admin-portal" 
+        element={<AdminLogin />} />
 
       {/* STUDENT */}
       <Route
@@ -153,6 +158,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="*" element={<Navigate to="/login" replace />} />
 
     </Routes>
 

@@ -34,6 +34,11 @@ type Props = {
     role: string
     setRole: (value: string) => void
 
+    schoolStatus: 'all' | 'assigned' | 'unassigned'
+    setSchoolStatus: (
+        value: 'all' | 'assigned' | 'unassigned'
+    ) => void
+
     onAssignSchool: (
         userId: string,
         schoolId: string
@@ -64,6 +69,9 @@ export default function UsersTableSchool({
     role,
     setRole,
 
+    schoolStatus,
+    setSchoolStatus,
+
     onAssignSchool,
     onChangeRole,
     onDelete,
@@ -91,6 +99,29 @@ export default function UsersTableSchool({
 
     const [errorPopup, setErrorPopup] =
         useState(false)
+
+    // SUMMARY STATS
+    const totalUsers = users.length
+
+    const totalStudents = users.filter(
+        (u) => u.role === 'student'
+    ).length
+
+    const totalTeachers = users.filter(
+        (u) => u.role === 'teacher'
+    ).length
+
+    const totalAdmins = users.filter(
+        (u) => u.role === 'admin'
+    ).length
+
+    const assignedUsers = users.filter(
+        (u) => !!u.school_id
+    ).length
+
+    const unassignedUsers = users.filter(
+        (u) => !u.school_id
+    ).length
 
     // AUTO CLOSE POPUP
     useEffect(() => {
@@ -292,7 +323,7 @@ export default function UsersTableSchool({
 
                         </div>
 
-                        {/* FILTER */}
+                        {/* FILTER ROLE*/}
                         <div className="relative min-w-[170px]">
 
                             <select
@@ -351,6 +382,240 @@ export default function UsersTableSchool({
 
                         </div>
 
+                        {/* FILTER ASSIGN */}
+                        <div className="relative min-w-[170px]">
+
+                            <select
+                                value={schoolStatus}
+                                onChange={(e) =>
+                                    setSchoolStatus(
+                                        e.target.value as
+                                            | 'all'
+                                            | 'assigned'
+                                            | 'unassigned'
+                                    )
+                                }
+                                className="
+                                    appearance-none
+                                    w-full
+                                    px-4
+                                    pr-14
+                                    py-2.5
+                                    rounded-xl
+                                    border
+                                    border-slate-200
+                                    dark:border-slate-700
+                                    bg-white
+                                    dark:bg-slate-800
+                                    text-slate-700
+                                    dark:text-slate-200
+                                    transition
+                                "
+                            >
+                                <option value="all">
+                                    All School Status
+                                </option>
+
+                                <option value="assigned">
+                                    Assigned
+                                </option>
+
+                                <option value="unassigned">
+                                    Unassigned
+                                </option>
+
+                            </select>
+
+                            <ChevronDown
+                                className="
+                                    pointer-events-none
+                                    absolute
+                                    right-5
+                                    top-1/2
+                                    -translate-y-1/2
+                                    h-4
+                                    w-4
+                                    text-slate-400
+                                "
+                            />
+
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* SUMMARY */}
+                <div
+                    className="
+                        grid
+                        grid-cols-2
+                        lg:grid-cols-6
+                        gap-4
+                        mb-6
+                    "
+                >
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-slate-200
+                            dark:border-slate-700
+                            bg-slate-50
+                            dark:bg-slate-800
+                            p-4
+                        "
+                    >
+                        <p className="text-xs text-slate-500">
+                            Total Users
+                        </p>
+
+                        <h3
+                            className="
+                                mt-2
+                                text-2xl
+                                font-bold
+                                text-slate-800
+                                dark:text-white
+                            "
+                        >
+                            {totalUsers}
+                        </h3>
+                    </div>
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-slate-200
+                            dark:border-slate-700
+                            bg-slate-50
+                            dark:bg-slate-800
+                            p-4
+                        "
+                    >
+                        <p className="text-xs text-slate-500">
+                            Students
+                        </p>
+
+                        <h3
+                            className="
+                                mt-2
+                                text-2xl
+                                font-bold
+                                text-sky-600
+                            "
+                        >
+                            {totalStudents}
+                        </h3>
+                    </div>
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-slate-200
+                            dark:border-slate-700
+                            bg-slate-50
+                            dark:bg-slate-800
+                            p-4
+                        "
+                    >
+                        <p className="text-xs text-slate-500">
+                            Teachers
+                        </p>
+
+                        <h3
+                            className="
+                                mt-2
+                                text-2xl
+                                font-bold
+                                text-violet-600
+                            "
+                        >
+                            {totalTeachers}
+                        </h3>
+                    </div>
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-slate-200
+                            dark:border-slate-700
+                            bg-slate-50
+                            dark:bg-slate-800
+                            p-4
+                        "
+                    >
+                        <p className="text-xs text-slate-500">
+                            Admins
+                        </p>
+
+                        <h3
+                            className="
+                                mt-2
+                                text-2xl
+                                font-bold
+                                text-amber-600
+                            "
+                        >
+                            {totalAdmins}
+                        </h3>
+                    </div>
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-slate-200
+                            dark:border-slate-700
+                            bg-slate-50
+                            dark:bg-slate-800
+                            p-4
+                        "
+                    >
+                        <p className="text-xs text-slate-500">
+                            Assigned
+                        </p>
+
+                        <h3
+                            className="
+                                mt-2
+                                text-2xl
+                                font-bold
+                                text-green-600
+                            "
+                        >
+                            {assignedUsers}
+                        </h3>
+                    </div>
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border
+                            border-slate-200
+                            dark:border-slate-700
+                            bg-slate-50
+                            dark:bg-slate-800
+                            p-4
+                        "
+                    >
+                        <p className="text-xs text-slate-500">
+                            Unassigned
+                        </p>
+
+                        <h3
+                            className="
+                                mt-2
+                                text-2xl
+                                font-bold
+                                text-red-600
+                            "
+                        >
+                            {unassignedUsers}
+                        </h3>
                     </div>
 
                 </div>

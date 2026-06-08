@@ -9,8 +9,8 @@ import {
 
 import DashboardLayout
 from '../../../../components/layout/DashboardLayout'
-
-import api from '../../../../api/axios'
+import { useNavigate } from 'react-router-dom'
+import { getAssignments } from '../../../../api/service/student/studentApi'
 
 type Assignment = {
     assignment_id?: string
@@ -37,30 +37,30 @@ function AssignmentsStudent() {
     }, [])
 
     const fetchAssignments = async () => {
-        try {
+    try {
 
-            setLoading(true)
+        setLoading(true)
 
-            const response =
-                await api.get('/student/assignments')
+        const response =
+            await getAssignments()
 
-            setAssignments(
-                Array.isArray(response.data.data)
-                    ? response.data.data
-                    : []
-            )
+        setAssignments(
+            Array.isArray(response.data)
+                ? response.data
+                : []
+        )
 
-        } catch (error) {
+    } catch (error) {
 
-            console.log(error)
+        console.error(error)
 
-            setAssignments([])
+        setAssignments([])
 
-        } finally {
+    } finally {
 
-            setLoading(false)
-        }
+        setLoading(false)
     }
+}
     
     // FORMAT DATE
     const formatDate = (date?: string) => {
@@ -68,7 +68,7 @@ function AssignmentsStudent() {
         if (!date) return '-'
 
         return new Date(date).toLocaleDateString(
-            'en-US',
+            'id-ID',
             {
                 year: 'numeric',
                 month: 'long',
@@ -76,6 +76,8 @@ function AssignmentsStudent() {
             }
         )
     }
+
+    const navigate = useNavigate()
 
     return (
 
@@ -290,6 +292,34 @@ function AssignmentsStudent() {
 
                                         {formatDate(item.created_at)}
                                     </div>
+
+                                </div>
+
+                                {/* ACTION */}
+                                <div className="mt-5">
+
+                                    <button
+                                        onClick={() => {
+
+                                            navigate(
+                                                `/dashboard/student?assignment_id=${item.assignment_id}`
+                                            )
+
+                                        }}
+                                        className="
+                                            rounded-xl
+                                            bg-indigo-600
+                                            px-4
+                                            py-2
+                                            text-sm
+                                            font-semibold
+                                            text-white
+                                            transition
+                                            hover:bg-indigo-700
+                                        "
+                                    >
+                                        Do a task 
+                                    </button>
 
                                 </div>
 

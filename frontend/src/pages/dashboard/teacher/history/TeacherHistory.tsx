@@ -288,17 +288,22 @@ function TeacherHistory() {
                                         "
                                     >
 
-                                        <div>
+                                        {item.score !== null &&
+                                        item.score !== undefined && (
 
-                                            <p className="text-xs text-slate-400">
-                                                Grammar Score
-                                            </p>
+                                            <div>
 
-                                            <p className="text-lg font-bold text-slate-800 dark:text-white">
-                                                {item.score}
-                                            </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Grammar Score
+                                                </p>
 
-                                        </div>
+                                                <p className="text-lg font-bold text-slate-800 dark:text-white">
+                                                    {item.score}
+                                                </p>
+
+                                            </div>
+
+                                        )}
 
                                         <button
                                             className="
@@ -464,27 +469,42 @@ function TeacherHistory() {
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
+                                    {detail.score !== null &&
+                                        detail.score !== undefined && (
+
+                                            <div>
+
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                                    Score
+                                                </p>
+
+                                                <p className="font-bold break-words text-slate-800 dark:text-white">
+                                                    {detail.score}
+                                                </p>
+
+                                            </div>
+
+                                        )}
+
+                                    {detail.grade !== null &&
+                                        detail.grade !== undefined && (
+
+                                            <div>
+
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                                    Grade
+                                                </p>
+
+                                                <p className="font-bold break-words text-slate-800 dark:text-white">
+                                                    {detail.grade}
+                                                </p>
+
+                                            </div>
+
+                                        )}
+
                                     <div>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                            Score
-                                        </p>
 
-                                        <p className="font-bold break-words text-slate-800 dark:text-white">
-                                            {detail.score}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                            Grade
-                                        </p>
-
-                                        <p className="font-bold break-words text-slate-800 dark:text-white">
-                                            {detail.grade}
-                                        </p>
-                                    </div>
-
-                                    <div>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">
                                             Word Count
                                         </p>
@@ -492,9 +512,11 @@ function TeacherHistory() {
                                         <p className="font-bold break-words text-slate-800 dark:text-white">
                                             {detail.word_count}
                                         </p>
+
                                     </div>
 
                                     <div>
+
                                         <p className="text-sm text-slate-500 dark:text-slate-400">
                                             Error Count
                                         </p>
@@ -502,9 +524,11 @@ function TeacherHistory() {
                                         <p className="font-bold break-words text-slate-800 dark:text-white">
                                             {detail.error_count}
                                         </p>
+
                                     </div>
 
                                     <div>
+
                                         <p className="text-sm text-slate-500 dark:text-slate-400">
                                             Created At
                                         </p>
@@ -514,19 +538,28 @@ function TeacherHistory() {
                                                 detail.created_at
                                             ).toLocaleString()}
                                         </p>
+
                                     </div>
 
-                                    <div>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                                            Score Total
-                                        </p>
+                                    {detail.score_total !== null &&
+                                        detail.score_total !== undefined && (
 
-                                        <p className="font-bold break-words text-slate-800 dark:text-white">
-                                            {detail.score_total}
-                                        </p>
-                                    </div>
+                                            <div>
+
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                                    Score Total
+                                                </p>
+
+                                                <p className="font-bold break-words text-slate-800 dark:text-white">
+                                                    {detail.score_total}
+                                                </p>
+
+                                            </div>
+
+                                        )}
 
                                     <div>
+
                                         <p className="text-sm text-slate-500 dark:text-slate-400">
                                             Reviewed At
                                         </p>
@@ -538,6 +571,7 @@ function TeacherHistory() {
                                                 ).toLocaleString()
                                                 : '-'}
                                         </p>
+
                                     </div>
 
                                 </div>

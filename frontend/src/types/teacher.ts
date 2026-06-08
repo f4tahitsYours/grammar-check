@@ -29,9 +29,9 @@ export interface SubmissionDetailResponse {
     corrected_text: string
 
     errors: any[]
-    show_score: boolean
-    score: number
-    grade: string
+
+    score?: number | null
+    grade?: string | null
 
     word_count: number
     error_count: number
@@ -44,17 +44,16 @@ export interface SubmissionDetailResponse {
     fallback_used: boolean
 
     created_at: string
-
     assignment_id: string
-
     rubric_status: string
 
-    score_grammar: number
-    score_mechanics: number
-    score_content: number
-    score_unity: number
+    score_grammar?: number | null
+    score_mechanics?: number | null
+    score_content?: number | null
+    score_unity?: number | null
+    score_total?: number | null
 
-    score_total: number
+    reviewed_at?: string | null
 
-    reviewed_at: string | null
+    score_hidden?: boolean
 }

@@ -91,46 +91,29 @@ function Sidebar({ open, setOpen }: SidebarProps) {
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, logout',
             cancelButtonText: 'Cancel',
-            backdrop: `
-                rgba(15,23,42,0.45)
-                blur(6px)
-            `
         })
 
         if (!result.isConfirmed) return
 
-        try {
+        setLogoutLoading(true)
 
-            setLogoutLoading(true)
+        const currentRole = user?.role
 
-            logout()
+        logout()
 
-            await Swal.fire({
-                icon: 'success',
-                title: 'Logout successful',
-                text: 'See you again',
-                confirmButtonColor: '#4f46e5',
-                timer: 1800,
-                showConfirmButton: false,
-            })
+        await Swal.fire({
+            icon: 'success',
+            title: 'Logout successful',
+            timer: 1200,
+            showConfirmButton: false,
+        })
 
-            navigate('/login')
-
-        } catch (error) {
-
-            console.log(error)
-
-            Swal.fire({
-                icon: 'error',
-                title: 'Logout failed',
-                text: 'Something went wrong',
-                confirmButtonColor: '#ef4444',
-            })
-
-        } finally {
-
-            setLogoutLoading(false)
+        if (currentRole === 'admin') {
+            navigate('/admin-portal', { replace: true })
+            return
         }
+
+        navigate('/login', { replace: true })
     }
 
     return (

@@ -1,4 +1,5 @@
 import api from '../../axios'
+import type { AssignmentsResponse } from '../../interface/Assigment'
 
 // Student Submit Submission
 export const submitGrammar = async (
@@ -55,7 +56,7 @@ export const getSubmissionHistory = async (
 }
 
 /* GET ASSIGNMENTS */
-export const getAssignments = async () => {
+export const getAssignments = async (): Promise<AssignmentsResponse> => {
 
     const response = await api.get(
         '/student/assignments'

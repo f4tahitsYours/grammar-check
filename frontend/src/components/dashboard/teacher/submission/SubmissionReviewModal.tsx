@@ -1,19 +1,41 @@
-import {
-    ArrowRight,
-    X
-} from 'lucide-react'
+import { useEffect } from 'react'
+import { ArrowRight, X } from 'lucide-react'
 
 interface Props {
     open: boolean
     onClose: () => void
-    detail: any
+
+    detail: SubmissionDetail | null
+
     detailLoading: boolean
+
     scoreContent: number
     scoreUnity: number
+
     setScoreContent: (value: number) => void
     setScoreUnity: (value: number) => void
+
     onSubmit: () => void
     submitLoading: boolean
+}
+
+interface SubmissionDetail {
+    original_text: string
+    corrected_text: string
+
+    score_grammar?: number | null
+    score_mechanics?: number | null
+
+    word_count?: number | null
+    error_count?: number | null
+
+    score?: number | null
+    grade?: string | null
+
+    created_at?: string | null
+    reviewed_at?: string | null
+
+    score_total?: number | null
 }
 
 function SubmissionReviewModal({
@@ -29,19 +51,59 @@ function SubmissionReviewModal({
     submitLoading
 }: Props) {
 
+        useEffect(() => {
+
+        if (!open) return
+
+        const handleEscape = (
+            e: KeyboardEvent
+        ) => {
+
+            if (e.key === 'Escape') {
+                onClose()
+            }
+        }
+
+        document.body.style.overflow = 'hidden'
+
+        window.addEventListener(
+            'keydown',
+            handleEscape
+        )
+
+        return () => {
+
+            document.body.style.overflow = ''
+
+            window.removeEventListener(
+                'keydown',
+                handleEscape
+            )
+        }
+
+    }, [open, onClose])
+
+    if (!open) return null
+
     return (
 
         <div
-            className={`
-                fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4
-                transition-all duration-300
-                ${open
-                    ? 'pointer-events-auto bg-black/50 opacity-100'
-                    : 'pointer-events-none bg-black/0 opacity-0'}
-            `}
+            onClick={onClose}
+            className="
+                fixed
+                inset-0
+                z-50
+                flex
+                items-center
+                justify-center
+                p-3
+                sm:p-4
+                bg-black/50
+            "
         >
 
             <div
+                onClick={(e) => e.stopPropagation()}
                 className={`
                     max-h-[90vh]
                     w-full
@@ -304,10 +366,18 @@ function SubmissionReviewModal({
 
                                     <input
                                         type="number"
+                                        min={0}
+                                        max={100}
                                         value={scoreContent}
                                         onChange={(e) =>
                                             setScoreContent(
-                                                Number(e.target.value)
+                                                Math.max(
+                                                    0,
+                                                    Math.min(
+                                                        100,
+                                                        Number(e.target.value)
+                                                    )
+                                                )
                                             )
                                         }
                                         className="
@@ -335,10 +405,18 @@ function SubmissionReviewModal({
 
                                     <input
                                         type="number"
+                                        min={0}
+                                        max={100}
                                         value={scoreUnity}
                                         onChange={(e) =>
                                             setScoreUnity(
-                                                Number(e.target.value)
+                                                Math.max(
+                                                    0,
+                                                    Math.min(
+                                                        100,
+                                                        Number(e.target.value)
+                                                    )
+                                                )
                                             )
                                         }
                                         className="
@@ -364,7 +442,13 @@ function SubmissionReviewModal({
 
                                 <button
                                     onClick={onSubmit}
-                                    disabled={submitLoading}
+                                    disabled={
+                                        submitLoading ||
+                                        scoreContent < 0 ||
+                                        scoreContent > 100 ||
+                                        scoreUnity < 0 ||
+                                        scoreUnity > 100
+                                    }
                                     className="
                                         flex
                                         items-center

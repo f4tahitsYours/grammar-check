@@ -29,6 +29,10 @@ function SubmissionDetail() {
 
     const [data, setData] =
         useState<SubmissionDetailResponse | null>(null)
+        
+    const showScoreSection =
+    data?.score !== undefined &&
+    data?.score !== null
 
     useEffect(() => {
 
@@ -90,7 +94,7 @@ function SubmissionDetail() {
                     <div className="space-y-6">
 
                         {/* SCORE HIDDEN BANNER */}
-                        {data.score_hidden && (
+                        {data.score_hidden === true &&  (
 
                             <div
                                 className="
@@ -144,7 +148,7 @@ function SubmissionDetail() {
                         )}
 
                         {/* AWAITING REVIEW BANNER */}
-                        {!data.score_hidden && data.rubric_status === 'awaiting_review' && (
+                        {!showScoreSection && data.rubric_status === 'awaiting_review' && (
 
                             <div
                                 className="
@@ -198,7 +202,7 @@ function SubmissionDetail() {
                         )}
 
                         {/* SCORE */}
-                        {!data.score_hidden && (
+                        {showScoreSection && (
 
                             <div className="grid gap-4 md:grid-cols-3">
 
@@ -208,7 +212,7 @@ function SubmissionDetail() {
                                     </p>
 
                                     <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
-                                        {data.score ?? '-'}
+                                        {data.score}
                                     </h3>
                                 </div>
 
@@ -218,7 +222,7 @@ function SubmissionDetail() {
                                     </p>
 
                                     <h3 className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">
-                                        {data.grade ?? '-'}
+                                        {data.grade}
                                     </h3>
                                 </div>
 
@@ -237,7 +241,7 @@ function SubmissionDetail() {
                         )}
 
                         {/* RUBRIC SCORES (if complete and not hidden) */}
-                        {!data.score_hidden && data.rubric_status === 'complete' && data.score_total && (
+                        {! showScoreSection && data.rubric_status === 'complete' && data.score_total !== undefined && data.score_total !== null &&  (
 
                             <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
 

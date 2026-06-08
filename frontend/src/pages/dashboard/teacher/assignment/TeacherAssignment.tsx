@@ -373,7 +373,7 @@ function TeacherAssignment() {
                         {/* LOADING */}
                         {loading && (
 
-                            <div className="py-20 text-center">
+                            <div className="py-20 text-center text-slate-600 dark:text-slate-300">
 
                                 Loading assignments...
 
@@ -392,24 +392,33 @@ function TeacherAssignment() {
 
                         {/* LIST */}
                         {!loading && !error && (
+                            <>
+                                {assignments.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center text-slate-500">
+                                        
+                                        <ClipboardList size={48} className="mb-3 text-slate-400" />
 
-                            <div className="mt-6 space-y-5">
+                                        <p className="text-lg font-semibold text-slate-600 dark:text-slate-300">
+                                            No assignments yet
+                                        </p>
 
-                                {assignments.map((assignment) => (
+                                        <p className="text-sm text-slate-400">
+                                            Created assignments will appear here
+                                        </p>
 
-                                    <AssignmentCard
-                                        key={
-                                            assignment.assignment_id ||
-                                            assignment.id
-                                        }
-                                        assignment={assignment}
-                                        onEdit={handleEditAssignment}
-                                    />
-
-                                ))}
-
-                            </div>
-
+                                    </div>
+                                ) : (
+                                    <div className="mt-6 space-y-5">
+                                        {assignments.map((assignment) => (
+                                            <AssignmentCard
+                                                key={assignment.assignment_id || assignment.id}
+                                                assignment={assignment}
+                                                onEdit={handleEditAssignment}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </>
                         )}
 
                     </div>

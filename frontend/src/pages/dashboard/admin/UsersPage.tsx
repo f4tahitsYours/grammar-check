@@ -9,7 +9,6 @@ import { AdminService } from '../../../api/service/admin/adminService'
 export default function UsersPage() {
 
     const {
-
         users,
         schools,
 
@@ -20,6 +19,9 @@ export default function UsersPage() {
 
         role,
         setRole,
+
+        schoolStatus,
+        setSchoolStatus,
 
         refreshUsers,
         handleAssignSchool
@@ -69,10 +71,11 @@ export default function UsersPage() {
                     role={role}
                     setRole={setRole}
 
+                    schoolStatus={schoolStatus}
+                    setSchoolStatus={setSchoolStatus}
+
                     onAssignSchool={handleAssignSchool}
-
                     onChangeRole={handleChangeRole}
-
                     onDelete={handleDelete}
 
                     refreshUsers={refreshUsers}

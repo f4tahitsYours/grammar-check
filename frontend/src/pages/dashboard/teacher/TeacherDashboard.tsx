@@ -121,11 +121,11 @@ function TeacherDashboard() {
                     detailLoading={detailLoading}
 
                     scoreContent={
-                        detail?.score_content || 0
+                        detail?.score_content ?? 0
                     }
 
                     scoreUnity={
-                        detail?.score_unity || 0
+                        detail?.score_unity ?? 0
                     }
 
                     setScoreContent={() => { }}

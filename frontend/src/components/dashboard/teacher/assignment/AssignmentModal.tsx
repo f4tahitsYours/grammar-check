@@ -94,13 +94,13 @@ function AssignmentModal({
                     className="
                         relative
                         w-full
-                        max-w-4xl
+                        max-w-3xl
                         rounded-2xl
                         bg-white
                         shadow-2xl
                         dark:bg-slate-900
 
-                        max-h-[95vh]
+                        max-h-[93vh]
                         overflow-y-auto
 
                         animate-in

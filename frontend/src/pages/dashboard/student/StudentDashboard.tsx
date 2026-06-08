@@ -2,6 +2,7 @@ import PageTransition from '../../../components/common/PageTransition'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { SendHorizonal, Volume2, Sparkles, Trophy, X, RotateCcw, RotateCw, Pause, ImagePlus, Play } from 'lucide-react'
 import { useStudentDashboard } from '../../../hooks/student/useStudentDashboard'
+import { useNavigate } from 'react-router-dom'
 
 function StudentDashboard() {
 
@@ -31,8 +32,10 @@ function StudentDashboard() {
         forwardAudio,
         setShowAudioControl,
         assignmentNote,
+        latestAssignments,
     } = useStudentDashboard()
 
+    const navigate = useNavigate()
     const wordCount = text.trim()
         ? text.trim().split(/\s+/).length
         : 0
@@ -560,12 +563,26 @@ function StudentDashboard() {
                                     dark:bg-indigo-950/20
                                 ">
 
-                                    <p className="
-                                        text-sm 
-                                        leading-relaxed 
-                                        text-slate-700 
-                                        dark:text-slate-200
-                                    ">
+                                    <h4
+                                        className="
+                                            mb-2
+                                            font-semibold
+                                            text-indigo-700
+                                            dark:text-indigo-300
+                                        "
+                                    >
+                                        {assignmentNote.title}
+                                    </h4>
+
+                                    <p
+                                        className="
+                                            text-sm
+                                            leading-relaxed
+                                            text-slate-700
+                                            break-words
+                                            dark:text-slate-200
+                                        "
+                                    >
                                         {assignmentNote.description}
                                     </p>
 
@@ -606,6 +623,80 @@ function StudentDashboard() {
 
                             </div>
                         )}
+
+                        <div className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900">
+
+                            <div className="mb-4 flex items-center justify-between">
+
+                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                    Recent Assignments
+                                </h3>
+
+                                <button
+                                    onClick={() => navigate('/dashboard/student/assignment')}
+                                    className="text-xs font-medium text-indigo-600 hover:underline"
+                                >
+                                    View All
+                                </button>
+
+                            </div>
+
+                            <div className="space-y-3">
+
+                                {latestAssignments.map((item) => (
+
+                                    <a
+                                        key={item.assignment_id}
+                                        href={`/dashboard/student?assignment_id=${item.assignment_id}`}
+                                        className="
+                                            block
+                                            w-full
+                                            overflow-hidden
+                                            rounded-xl
+                                            border
+                                            border-slate-200
+                                            p-3
+                                            transition
+                                            hover:border-indigo-300
+                                            hover:bg-indigo-50
+                                            dark:border-slate-700
+                                            dark:hover:bg-slate-800
+                                        "
+                                    >
+
+                                        <h4
+                                            className="
+                                                text-sm
+                                                font-semibold
+                                                text-slate-800
+                                                dark:text-slate-100
+                                                break-words
+                                                line-clamp-2
+                                            "
+                                        >
+                                            {item.title}
+                                        </h4>
+
+                                        <p
+                                            className="
+                                                mt-1
+                                                text-xs
+                                                text-slate-500
+                                                dark:text-slate-400
+                                                break-words
+                                                line-clamp-3
+                                            "
+                                        >
+                                            {item.description}
+                                        </p>
+
+                                    </a>
+
+                                ))}
+
+                            </div>
+
+                        </div>
 
                         {/* SCORE CARD */}
                         {showScore && (

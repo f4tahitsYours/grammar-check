@@ -119,16 +119,9 @@ export function useLogin() {
             })
 
             // REDIRECT
-            if (data.role === 'admin') {
-
-                navigate('/dashboard/admin/')
-
-            } else if (data.role === 'teacher') {
-
+            if (data.role === 'teacher') {
                 navigate('/dashboard/teacher/')
-
             } else {
-
                 navigate('/dashboard/student/')
             }
 
