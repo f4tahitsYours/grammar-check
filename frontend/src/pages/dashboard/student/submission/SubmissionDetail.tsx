@@ -6,7 +6,10 @@ import {
 
 import {
     EyeOff,
-    Clock
+    Clock,
+    Image as ImageIcon,
+    Volume2,
+    Loader2
 } from 'lucide-react'
 
 import DashboardLayout
@@ -15,6 +18,11 @@ from '../../../../components/layout/DashboardLayout'
 import {
     getSubmissionDetail
 } from '../../../../api/studentApi'
+
+import {
+    generatePoster,
+    generateTTS
+} from '../../../../api/service/student/studentApi'
 
 import type {
     SubmissionDetailResponse
@@ -29,6 +37,12 @@ function SubmissionDetail() {
 
     const [data, setData] =
         useState<SubmissionDetailResponse | null>(null)
+    
+    const [posterUrl, setPosterUrl] = useState<string | null>(null)
+    const [posterLoading, setPosterLoading] = useState(false)
+    const [audioUrl, setAudioUrl] = useState<string | null>(null)
+    const [audioLoading, setAudioLoading] = useState(false)
+    const [isPlaying, setIsPlaying] = useState(false)
         
     const showScoreSection =
     data?.score !== undefined &&
@@ -60,6 +74,68 @@ function SubmissionDetail() {
         fetchDetail()
 
     }, [id])
+    
+    const handleGeneratePoster = async () => {
+        if (!id) return
+        
+        setPosterLoading(true)
+        try {
+            const response = await generatePoster(id)
+            setPosterUrl(response.data.poster_url)
+        } catch (error) {
+            console.error('Failed to generate poster:', error)
+            alert('Gagal generate poster. Silakan coba lagi.')
+        } finally {
+            setPosterLoading(false)
+        }
+    }
+    
+    const handleGenerateTTS = async () => {
+        if (!id) return
+        
+        setAudioLoading(true)
+        try {
+            const response = await generateTTS(id)
+            if (response.data.audio_url) {
+                setAudioUrl(response.data.audio_url)
+            } else {
+                // Fallback to Web Speech API
+                handleWebSpeechFallback()
+            }
+        } catch (error) {
+            console.error('Failed to generate TTS:', error)
+            // Fallback to Web Speech API
+            handleWebSpeechFallback()
+        } finally {
+            setAudioLoading(false)
+        }
+    }
+    
+    const handleWebSpeechFallback = () => {
+        if (!data?.corrected_text) return
+        
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(data.corrected_text)
+            utterance.lang = 'en-US'
+            utterance.rate = 0.9
+            utterance.onstart = () => setIsPlaying(true)
+            utterance.onend = () => setIsPlaying(false)
+            window.speechSynthesis.speak(utterance)
+        } else {
+            alert('Browser Anda tidak mendukung text-to-speech')
+        }
+    }
+    
+    const handlePlayAudio = () => {
+        if (audioUrl) {
+            const audio = new Audio(audioUrl)
+            audio.play()
+            setIsPlaying(true)
+            audio.onended = () => setIsPlaying(false)
+        } else {
+            handleWebSpeechFallback()
+        }
+    }
 
     return (
         <DashboardLayout>
@@ -378,6 +454,172 @@ function SubmissionDetail() {
 
                             </div>
 
+                        </div>
+
+                        {/* MULTIMEDIA FEATURES */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            
+                            {/* POSTER GENERATION */}
+                            <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
+                                <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
+                                    Motivational Poster
+                                </h3>
+                                
+                                {!posterUrl && (
+                                    <button
+                                        onClick={handleGeneratePoster}
+                                        disabled={posterLoading}
+                                        className="
+                                            w-full
+                                            flex
+                                            items-center
+                                            justify-center
+                                            gap-2
+                                            rounded-xl
+                                            bg-gradient-to-r
+                                            from-purple-500
+                                            to-pink-500
+                                            px-6
+                                            py-3
+                                            text-white
+                                            font-semibold
+                                            hover:from-purple-600
+                                            hover:to-pink-600
+                                            disabled:opacity-50
+                                            disabled:cursor-not-allowed
+                                            transition-all
+                                        "
+                                    >
+                                        {posterLoading ? (
+                                            <>
+                                                <Loader2 size={20} className="animate-spin" />
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ImageIcon size={20} />
+                                                Generate Poster
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                                
+                                {posterUrl && (
+                                    <div className="space-y-3">
+                                        <img
+                                            src={posterUrl}
+                                            alt="Motivational Poster"
+                                            className="w-full rounded-xl shadow-lg"
+                                        />
+                                        <button
+                                            onClick={() => window.open(posterUrl, '_blank')}
+                                            className="
+                                                w-full
+                                                text-sm
+                                                text-purple-600
+                                                hover:text-purple-700
+                                                dark:text-purple-400
+                                                dark:hover:text-purple-300
+                                                transition-colors
+                                            "
+                                        >
+                                            Open in new tab
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* TTS AUDIO */}
+                            <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
+                                <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
+                                    Text-to-Speech
+                                </h3>
+                                
+                                <div className="space-y-3">
+                                    {!audioUrl && (
+                                        <button
+                                            onClick={handleGenerateTTS}
+                                            disabled={audioLoading}
+                                            className="
+                                                w-full
+                                                flex
+                                                items-center
+                                                justify-center
+                                                gap-2
+                                                rounded-xl
+                                                bg-gradient-to-r
+                                                from-blue-500
+                                                to-cyan-500
+                                                px-6
+                                                py-3
+                                                text-white
+                                                font-semibold
+                                                hover:from-blue-600
+                                                hover:to-cyan-600
+                                                disabled:opacity-50
+                                                disabled:cursor-not-allowed
+                                                transition-all
+                                            "
+                                        >
+                                            {audioLoading ? (
+                                                <>
+                                                    <Loader2 size={20} className="animate-spin" />
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Volume2 size={20} />
+                                                    Generate Audio
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                    
+                                    {audioUrl && (
+                                        <audio
+                                            src={audioUrl}
+                                            controls
+                                            className="w-full"
+                                        />
+                                    )}
+                                    
+                                    {!audioUrl && !audioLoading && (
+                                        <button
+                                            onClick={handleWebSpeechFallback}
+                                            disabled={isPlaying}
+                                            className="
+                                                w-full
+                                                flex
+                                                items-center
+                                                justify-center
+                                                gap-2
+                                                rounded-xl
+                                                border-2
+                                                border-blue-200
+                                                px-6
+                                                py-2
+                                                text-blue-600
+                                                font-medium
+                                                hover:bg-blue-50
+                                                disabled:opacity-50
+                                                disabled:cursor-not-allowed
+                                                dark:border-blue-800
+                                                dark:text-blue-400
+                                                dark:hover:bg-blue-950/20
+                                                transition-all
+                                            "
+                                        >
+                                            <Volume2 size={18} />
+                                            {isPlaying ? 'Playing...' : 'Play with Browser Speech'}
+                                        </button>
+                                    )}
+                                    
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                                        {audioUrl ? 'High-quality AI voice' : 'Uses browser voice synthesis'}
+                                    </p>
+                                </div>
+                            </div>
+                            
                         </div>
 
                     </div>

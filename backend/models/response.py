@@ -83,6 +83,8 @@ class SubmissionListItem(BaseModel):
     error_count: int
     created_at: str
     assignment_id: Optional[str] = None
+    assignment_title: Optional[str] = None  # For display in list
+    original_text_preview: Optional[str] = None  # First 100 chars for card title
     rubric_status: str
     score_grammar: Optional[int] = None
     score_mechanics: Optional[int] = None

@@ -807,3 +807,180 @@ async def assign_user_to_school(
         "school_id": request.school_id,
         "school_name": school["name"]
     }
+
+
+@router.get("/export/submissions")
+async def export_submissions_admin(
+    school_id: Optional[str] = Query(default=None),
+    from_date: Optional[str] = Query(default=None),
+    to_date: Optional[str] = Query(default=None),
+    class_target: Optional[str] = Query(default=None),
+    current_user: UserPayload = Depends(require_admin),
+):
+    """
+    Export submissions as CSV across ALL schools for research purposes.
+    Admin sees ALL scores regardless of show_score setting.
+    
+    Query Parameters:
+        - school_id: Filter by specific school (optional)
+        - from_date: Filter submissions from this date (ISO format, optional)
+        - to_date: Filter submissions until this date (ISO format, optional)
+        - class_target: Filter by class name (optional)
+    
+    Returns:
+        StreamingResponse with CSV file containing comprehensive submission data.
+    """
+    import csv
+    import io
+    import json
+    from fastapi.responses import StreamingResponse
+    
+    supabase = get_supabase_client()
+    
+    # Build query - JOIN with users (for student data) and schools
+    # Also JOIN assignments to get assignment_title and show_score setting
+    query = supabase.table("submissions").select(
+        "id, student_id, assignment_id, original_text, corrected_text, "
+        "word_count, error_count, error_breakdown, "
+        "score, grade, score_grammar, score_mechanics, score_content, score_unity, score_total, "
+        "rubric_status, created_at, reviewed_at, "
+        "users!submissions_student_id_fkey!inner(name, email, class_name, school_id, schools(name)), "
+        "assignments(title, show_score)"
+    )
+    
+    # Apply filters
+    if school_id:
+        query = query.eq("users.school_id", school_id)
+    
+    if class_target:
+        query = query.eq("users.class_name", class_target)
+    
+    if from_date:
+        query = query.gte("created_at", from_date)
+    
+    if to_date:
+        query = query.lte("created_at", to_date)
+    
+    # Order by created_at DESC
+    query = query.order("created_at", desc=True)
+    
+    # Generate filename with current date
+    export_date = datetime.utcnow().strftime("%Y%m%d")
+    filename = f"grammar_export_{export_date}.csv"
+    
+    # Generator function for streaming CSV
+    def generate_csv():
+        # Write header
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "student_name",
+            "student_email", 
+            "school_name",
+            "class_name",
+            "assignment_title",
+            "original_text",
+            "corrected_text",
+            "word_count",
+            "error_count",
+            "error_breakdown",
+            "score_grammar",
+            "score_mechanics",
+            "score_content",
+            "score_unity",
+            "score_total",
+            "rubric_status",
+            "submitted_at",
+            "reviewed_at"
+        ])
+        yield output.getvalue()
+        output.close()
+        
+        # Fetch and stream rows in batches
+        batch_size = 100
+        offset = 0
+        
+        while True:
+            batch_result = query.range(offset, offset + batch_size - 1).execute()
+            
+            if not batch_result.data:
+                break
+            
+            for row in batch_result.data:
+                # Extract user data
+                user_data = row.get("users", {})
+                student_name = user_data.get("name", "")
+                student_email = user_data.get("email", "")
+                class_name = user_data.get("class_name", "")
+                
+                # Extract school name
+                school_data = user_data.get("schools", {})
+                school_name = school_data.get("name", "") if school_data else ""
+                
+                # Extract assignment data
+                assignment_data = row.get("assignments", {})
+                assignment_title = assignment_data.get("title", "") if assignment_data else ""
+                
+                # Format error_breakdown as JSON string for CSV
+                error_breakdown = row.get("error_breakdown", {})
+                error_breakdown_str = json.dumps(error_breakdown) if error_breakdown else ""
+                
+                # IMPORTANT: Admin sees ALL scores regardless of show_score setting
+                # This is for research/analysis purposes
+                
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow([
+                    student_name,
+                    student_email,
+                    school_name,
+                    class_name,
+                    assignment_title,
+                    row.get("original_text", ""),
+                    row.get("corrected_text", ""),
+                    row.get("word_count", 0),
+                    row.get("error_count", 0),
+                    error_breakdown_str,
+                    row.get("score_grammar", ""),
+                    row.get("score_mechanics", ""),
+                    row.get("score_content", ""),
+                    row.get("score_unity", ""),
+                    row.get("score_total", ""),
+                    row.get("rubric_status", ""),
+                    row.get("created_at", ""),
+                    row.get("reviewed_at", "")
+                ])
+                yield output.getvalue()
+                output.close()
+            
+            if len(batch_result.data) < batch_size:
+                break
+            
+            offset += batch_size
+    
+    # Log export action to audit_log
+    supabase.table("audit_log").insert({
+        "user_id": current_user.user_id,
+        "action": "export.submissions_admin",
+        "resource": "submissions",
+        "metadata": {
+            "school_id": school_id,
+            "from_date": from_date,
+            "to_date": to_date,
+            "class_target": class_target,
+            "filename": filename
+        },
+    }).execute()
+    
+    logger.info(
+        f"Admin export initiated: admin_id={current_user.user_id}, "
+        f"school_id={school_id}, from_date={from_date}, to_date={to_date}, "
+        f"class_target={class_target}"
+    )
+    
+    return StreamingResponse(
+        generate_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+

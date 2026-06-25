@@ -18,6 +18,10 @@ import {
     useSubmissionHistory
 } from '../../../../hooks/student/useSubmissionHistory'
 
+import {
+    getSubmissionDetail
+} from '../../../../api/service/student/studentApi'
+
 function History() {
 
     const {
@@ -43,19 +47,30 @@ function History() {
 
         setDetailLoading(true)
 
-        // REAL DATA
-        setTimeout(() => {
-
+        try {
+            // Fetch full submission detail from API
+            const fullDetail = await getSubmissionDetail(item.id)
+            setDetail(fullDetail)
+        } catch (error) {
+            console.error('Failed to fetch submission detail:', error)
+            // Fallback to list item data if API call fails
             setDetail(item)
-
+        } finally {
             setDetailLoading(false)
-
-        }, 300)
+        }
     }
 
     // SHORT TITLE
-    const getShortTitle = (text: string) => {
+    const getShortTitle = (item: any) => {
 
+        // Prioritize assignment title if available
+        if (item.assignment_title) {
+            return item.assignment_title
+        }
+        
+        // Otherwise use original text preview
+        const text = item.original_text_preview || item.original_text || ''
+        
         if (!text) return 'Untitled Submission'
 
         const words = text.split(' ')
@@ -252,9 +267,7 @@ function History() {
                                                     dark:text-white
                                                 "
                                             >
-                                                {getShortTitle(
-                                                    item.original_text
-                                                )}
+                                                {getShortTitle(item)}
                                             </h3>
 
                                             <div
@@ -284,17 +297,33 @@ function History() {
                                     {/* RIGHT */}
                                     <div className="flex items-center gap-3">
 
-                                        <div className="text-right">
+                                        {!item.score_hidden && (
+                                            <div className="text-right">
 
-                                            <p className="text-xs text-slate-400">
-                                                Score
-                                            </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Score
+                                                </p>
 
-                                            <h3 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                                                {item.score ?? 0}
-                                            </h3>
+                                                <h3 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                                    {item.score_total ?? item.score ?? 0}
+                                                </h3>
 
-                                        </div>
+                                            </div>
+                                        )}
+
+                                        {item.score_hidden && (
+                                            <div className="text-right">
+
+                                                <p className="text-xs text-slate-400">
+                                                    Status
+                                                </p>
+
+                                                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                                                    Score Hidden
+                                                </p>
+
+                                            </div>
+                                        )}
 
                                         <ChevronRight
                                             size={20}

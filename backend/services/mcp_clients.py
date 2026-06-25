@@ -1,6 +1,19 @@
 from typing import Any, Dict
 from supabase import create_client, Client
 from backend.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Import Supabase/GoTrue error types for proper exception handling
+try:
+    from gotrue.errors import AuthApiError
+except ImportError:
+    try:
+        from supabase_auth.errors import AuthApiError
+    except ImportError:
+        # Fallback if neither import works
+        AuthApiError = Exception
 
 class BaseMCPClient:
     tool_name: str
@@ -21,42 +34,69 @@ class SupabaseAuthMCP(BaseMCPClient):
     def _get_client(self) -> Client:
         """Lazy initialization of Supabase client."""
         if self._client is None:
+            key_preview = settings.supabase_key[:20] if len(settings.supabase_key) > 20 else settings.supabase_key
+            logger.info(f"Initializing Supabase client with anon key: {key_preview}...")
             self._client = create_client(settings.supabase_url, settings.supabase_key)
         return self._client
     
     def _get_admin_client(self) -> Client:
         """Lazy initialization of Supabase admin client."""
         if self._admin_client is None:
+            service_key = settings.supabase_service_key or settings.supabase_key
+            key_preview = service_key[:20] if len(service_key) > 20 else service_key
+            logger.info(f"Initializing Supabase admin client with service key: {key_preview}...")
             self._admin_client = create_client(
                 settings.supabase_url, 
-                settings.supabase_service_key or settings.supabase_key
+                service_key
             )
         return self._admin_client
 
     async def sign_in(self, email: str, password: str) -> dict:
         client = self._get_client()
-        response = client.auth.sign_in_with_password({"email": email, "password": password})
-        if not response.user:
-            raise ValueError("Invalid credentials")
-        return {
-            "user": response.user,
-            "session": response.session
-        }
+        logger.info(f"Attempting sign_in for email: {email}")
+        try:
+            response = client.auth.sign_in_with_password({"email": email, "password": password})
+            if not response.user:
+                raise ValueError("Invalid credentials - no user returned")
+            return {
+                "user": response.user,
+                "session": response.session
+            }
+        except AuthApiError as e:
+            logger.error(f"sign_in failed with AuthApiError: {str(e)}")
+            # Convert to ValueError for consistent error handling
+            raise ValueError(f"Authentication error: {str(e)}")
+        except Exception as e:
+            logger.error(f"sign_in failed with unexpected exception: {type(e).__name__}: {str(e)}")
+            raise
 
     async def sign_up(self, email: str, password: str, metadata: dict) -> dict:
         client = self._get_client()
-        response = client.auth.sign_up({
-            "email": email,
-            "password": password,
-            "options": {
-                "data": metadata
+        logger.info(f"Attempting sign_up for email: {email}")
+        try:
+            response = client.auth.sign_up({
+                "email": email,
+                "password": password,
+                "options": {
+                    "data": metadata
+                }
+            })
+            logger.info(f"sign_up response received: user={response.user is not None}")
+            if not response.user:
+                raise ValueError("Sign up failed - no user returned")
+            return {
+                "user": response.user
             }
-        })
-        if not response.user:
-            raise ValueError("Sign up failed")
-        return {
-            "user": response.user
-        }
+        except AuthApiError as e:
+            # Supabase Auth API errors (including invalid API key)
+            logger.error(f"sign_up failed with AuthApiError: {str(e)}")
+            # Convert to ValueError for consistent error handling in auth.py
+            if "already registered" in str(e).lower() or "already exists" in str(e).lower():
+                raise ValueError(f"Email already registered: {str(e)}")
+            raise ValueError(f"Authentication error: {str(e)}")
+        except Exception as e:
+            logger.error(f"sign_up failed with unexpected exception: {type(e).__name__}: {str(e)}")
+            raise
         
     async def call(self, input: dict) -> dict:
         action = input.get("action")
@@ -79,7 +119,7 @@ class SupabaseAuthMCP(BaseMCPClient):
 
 
 class OpenAIPosterMCP(BaseMCPClient):
-    """MCP client for OpenAI poster generation (GPT-4o-mini + DALL-E 3)."""
+    """MCP client for OpenAI poster generation (GPT-4o-mini + GPT Image 1.5)."""
     tool_name = "openai_poster"
     
     def __init__(self, api_key: str):
@@ -132,21 +172,98 @@ class OpenAIPosterMCP(BaseMCPClient):
     
     async def generate_image(self, prompt: str) -> str:
         """
-        Generate image using DALL-E 3.
+        Generate image using GPT Image 1.5 (current flagship model).
+        
+        gpt-image-1.5 returns images as base64-encoded data by default.
+        This method decodes the base64 data and uploads it to Supabase Storage.
         
         Returns:
-            str: Image URL from DALL-E response
+            str: Public URL of uploaded image from Supabase Storage
         """
+        import base64
+        import uuid
+        from datetime import datetime
+        
         client = self._get_client()
+        
+        # Generate image (gpt-image-1.5 returns b64_json by default, no need to specify response_format)
         response = await client.images.generate(
-            model="dall-e-3",
+            model="gpt-image-1.5",
             prompt=prompt,
             size="1024x1024",
-            quality="standard",
+            quality="high",  # Valid values for gpt-image-1.5: 'low', 'medium', 'high', 'auto'
             n=1
         )
         
-        return response.data[0].url
+        # Extract base64 data
+        image_item = response.data[0]
+        
+        # gpt-image-1.5 may return either url or b64_json
+        # Try url first (if OpenAI provides it), fallback to b64_json
+        if hasattr(image_item, 'url') and image_item.url:
+            logger.info(f"[POSTER] Received direct URL: {image_item.url}")
+            return image_item.url
+        
+        # Otherwise, expect b64_json
+        if not hasattr(image_item, 'b64_json') or not image_item.b64_json:
+            logger.error("[POSTER] No b64_json or url data in response")
+            raise ValueError("Invalid response from OpenAI: no base64 image data or URL")
+        
+        b64_data = image_item.b64_json
+        logger.info(f"[POSTER] Received base64 image data (length: {len(b64_data)} chars)")
+        
+        # Decode base64 to bytes
+        try:
+            image_bytes = base64.b64decode(b64_data)
+            logger.info(f"[POSTER] Decoded image: {len(image_bytes)} bytes")
+        except Exception as e:
+            logger.error(f"[POSTER] Failed to decode base64: {e}")
+            raise ValueError(f"Failed to decode base64 image data: {e}")
+        
+        # Upload to Supabase Storage
+        try:
+            # Generate unique filename
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            filename = f"poster_{timestamp}_{uuid.uuid4().hex[:8]}.png"
+            
+            # Initialize Supabase client for storage (use service key for full access)
+            supabase = create_client(
+                settings.supabase_url, 
+                settings.supabase_service_key or settings.supabase_key
+            )
+            
+            # Upload to 'posters' bucket
+            # Note: Bucket must be created in Supabase dashboard with public access
+            bucket_name = "posters"
+            
+            try:
+                upload_response = supabase.storage.from_(bucket_name).upload(
+                    path=filename,
+                    file=image_bytes,
+                    file_options={"content-type": "image/png", "upsert": "false"}
+                )
+                logger.info(f"[POSTER] Upload response: {upload_response}")
+            except Exception as upload_error:
+                error_msg = str(upload_error).lower()
+                if "bucket" in error_msg and "not found" in error_msg:
+                    logger.error(f"[POSTER] Bucket '{bucket_name}' does not exist")
+                    raise ValueError(
+                        f"Storage bucket '{bucket_name}' not found. "
+                        f"Please create it in Supabase Dashboard → Storage → New Bucket → "
+                        f"Name: 'posters', Public: Yes"
+                    )
+                else:
+                    raise
+            
+            # Get public URL
+            public_url = supabase.storage.from_(bucket_name).get_public_url(filename)
+            logger.info(f"[POSTER] Uploaded successfully: {public_url}")
+            
+            return public_url
+            
+        except Exception as e:
+            logger.error(f"[POSTER] Storage upload failed: {e}")
+            raise ValueError(f"Failed to upload image to storage: {e}")
     
     async def call(self, input: dict) -> dict:
         """Generic call interface for MCP."""

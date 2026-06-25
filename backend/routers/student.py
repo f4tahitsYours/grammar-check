@@ -242,9 +242,9 @@ async def get_submissions(
     
     # Get paginated data
     result = supabase.table("submissions").select(
-        "id, score, grade, word_count, error_count, created_at, "
+        "id, score, grade, word_count, error_count, created_at, original_text, "
         "assignment_id, rubric_status, score_grammar, score_mechanics, score_total, "
-        "assignments(show_score)"
+        "assignments(show_score, title)"
     ).eq(
         "student_id", current_user.user_id
     ).order(
@@ -271,6 +271,15 @@ async def get_submissions(
                 display_score_mechanics = None
                 display_score_total = None
         
+        # Get assignment title if available
+        assignment_title = None
+        if row.get("assignments"):
+            assignment_title = row["assignments"].get("title")
+        
+        # Get original text preview (first 100 characters)
+        original_text = row.get("original_text", "")
+        original_text_preview = original_text[:100] if original_text else None
+        
         items.append(SubmissionListItem(
             id=str(row["id"]),
             score=display_score,
@@ -279,6 +288,8 @@ async def get_submissions(
             error_count=row["error_count"],
             created_at=row["created_at"],
             assignment_id=str(row["assignment_id"]) if row.get("assignment_id") else None,
+            assignment_title=assignment_title,
+            original_text_preview=original_text_preview,
             rubric_status=row["rubric_status"],
             score_grammar=display_score_grammar,
             score_mechanics=display_score_mechanics,

@@ -42,12 +42,22 @@ export function useSubmissionHistory() {
     const averageScore =
         histories.length > 0
             ? Math.round(
-                histories.reduce(
-                    (acc, item) =>
-                        acc + item.score,
-                    0
-                ) / histories.length
-            )
+                histories
+                    .filter((item) => {
+                        const scoreValue = item.score_total ?? item.score
+                        return scoreValue !== null && scoreValue !== undefined && !item.score_hidden
+                    })
+                    .reduce(
+                        (acc, item) => {
+                            const scoreValue = item.score_total ?? item.score
+                            return acc + scoreValue
+                        },
+                        0
+                    ) / histories.filter((item) => {
+                        const scoreValue = item.score_total ?? item.score
+                        return scoreValue !== null && scoreValue !== undefined && !item.score_hidden
+                    }).length
+            ) || 0
             : 0
 
     /* GRADE STYLE */
