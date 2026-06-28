@@ -20,6 +20,9 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Debug prints (temporary - remove after verification)
-print(f"[CONFIG] SUPABASE_URL loaded: {bool(settings.supabase_url)}")
-print(f"[CONFIG] SUPABASE_KEY loaded: {bool(settings.supabase_key)}")
+# Debug prints for verification
+print(f"[CONFIG] SUPABASE_URL: {settings.supabase_url}")
+print(f"[CONFIG] SUPABASE_KEY: '{settings.supabase_key[:25]}...'")
+print(f"[CONFIG] SERVICE_KEY: '{str(settings.supabase_service_key)[:25]}...'")
+print(f"[CONFIG] OPENAI_API_KEY: '{settings.openai_api_key[:20]}...' (length: {len(settings.openai_api_key)})")
+print(f"[CONFIG] OPENAI_API_KEY is {'EMPTY' if not settings.openai_api_key else 'SET'}")

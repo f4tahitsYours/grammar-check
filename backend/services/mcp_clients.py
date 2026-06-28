@@ -316,10 +316,9 @@ class OpenAITTSMCP(BaseMCPClient):
             response_format="mp3"
         )
         
-        # Read audio bytes from response
-        audio_bytes = b""
-        async for chunk in response.iter_bytes():
-            audio_bytes += chunk
+        # Read audio bytes from async response
+        # For AsyncOpenAI, use .aread() method to get full audio bytes
+        audio_bytes = await response.aread()
         
         return audio_bytes
     

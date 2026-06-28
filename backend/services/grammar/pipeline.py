@@ -131,12 +131,14 @@ async def run_pipeline(text: str) -> PipelineResult:
     # Step 5: Run LLM refiner
     llm_errors = []
     try:
+        logger.info("[PIPELINE] 🚀 Starting LLM refiner...")
         llm_client = OpenAIGrammarMCP()
         lt_errors_dict = [asdict(e) for e in lt_errors]
+        logger.info(f"[PIPELINE] Passing {len(lt_errors_dict)} LanguageTool errors to LLM...")
         llm_errors = await llm_client.refine_grammar(cleaned_text, lt_errors_dict)
-        logger.info(f"LLM found {len(llm_errors)} additional errors")
+        logger.info(f"[PIPELINE] ✅ LLM found {len(llm_errors)} additional errors")
     except LLMUnavailableError as e:
-        logger.warning(f"LLM unavailable: {e}")
+        logger.error(f"[PIPELINE] ⚠️  LLM unavailable: {e}")
         fallback_used = True
     
     # Step 6: Merge errors
@@ -189,6 +191,9 @@ async def run_pipeline(text: str) -> PipelineResult:
     )
     
     # Step 12: Return result
+    source_info = "languagetool+llm" if (lt_errors and llm_errors) else ("languagetool_only" if lt_errors else ("llm_only" if llm_errors else "no_errors"))
+    logger.info(f"[PIPELINE] 📊 Pipeline complete - Source: {source_info}, Total errors: {error_count}, Fallback used: {fallback_used}")
+    
     return PipelineResult(
         source="pipeline",
         corrected_text=corrected_text,

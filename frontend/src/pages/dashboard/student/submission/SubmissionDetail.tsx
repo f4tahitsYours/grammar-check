@@ -81,7 +81,7 @@ function SubmissionDetail() {
         setPosterLoading(true)
         try {
             const response = await generatePoster(id)
-            setPosterUrl(response.data.poster_url)
+            setPosterUrl(response.poster_url)
         } catch (error) {
             console.error('Failed to generate poster:', error)
             alert('Gagal generate poster. Silakan coba lagi.')
@@ -96,8 +96,8 @@ function SubmissionDetail() {
         setAudioLoading(true)
         try {
             const response = await generateTTS(id)
-            if (response.data.audio_url) {
-                setAudioUrl(response.data.audio_url)
+            if (response.audio_url) {
+                setAudioUrl(response.audio_url)
             } else {
                 // Fallback to Web Speech API
                 handleWebSpeechFallback()

@@ -3,6 +3,7 @@ from backend.models.request import LoginRequest, RegisterRequest
 from backend.models.response import LoginResponse, RegisterResponse
 from backend.services.mcp_clients import SupabaseAuthMCP
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,9 @@ async def register(request: RegisterRequest):
         raise
     except Exception as e:
         logger.error(f"Unexpected error during registration: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Traceback:\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail=f"Internal server error: {str(e)}"
         )

@@ -78,9 +78,15 @@ class OpenAIGrammarMCP(BaseMCPClient):
         Raises:
             LLMUnavailableError: If LLM service is unavailable
         """
+        logger.info(f"[LLM REFINER] Starting LLM refinement for text length: {len(text)}")
+        logger.info(f"[LLM REFINER] Existing errors count: {len(existing_errors)}")
+        
         user_prompt = self._build_user_prompt(text, existing_errors)
         
         try:
+            logger.info("[LLM REFINER] ⚡ CALLING OPENAI API NOW...")
+            logger.info(f"[LLM REFINER] Model: {self.model}, Temperature: {self.temperature}")
+            
             client = self._get_client()
             response = await client.chat.completions.create(
                 model=self.model,
@@ -92,13 +98,20 @@ class OpenAIGrammarMCP(BaseMCPClient):
                 ]
             )
             
+            logger.info(f"[LLM REFINER] ✅ OpenAI API response received!")
+            logger.info(f"[LLM REFINER] Token usage - Input: {response.usage.prompt_tokens}, Output: {response.usage.completion_tokens}, Total: {response.usage.total_tokens}")
+            
             content = response.choices[0].message.content
             if not content:
-                logger.warning("LLM returned empty response")
+                logger.warning("[LLM REFINER] ⚠️  LLM returned empty response")
                 return []
+            
+            logger.info(f"[LLM REFINER] Response content length: {len(content)}")
             
             result = json.loads(content)
             additional_errors = result.get("additional_errors", [])
+            
+            logger.info(f"[LLM REFINER] ✅ Found {len(additional_errors)} additional errors from LLM")
             
             normalized = []
             for error in additional_errors:
@@ -114,13 +127,15 @@ class OpenAIGrammarMCP(BaseMCPClient):
             return normalized
             
         except json.JSONDecodeError as e:
-            logger.warning(f"Failed to parse LLM JSON response: {e}")
+            logger.error(f"[LLM REFINER] ❌ Failed to parse LLM JSON response: {e}")
             return []
         except OpenAIError as e:
-            logger.warning(f"OpenAI API error: {e}")
+            logger.error(f"[LLM REFINER] ❌ OpenAI API error: {type(e).__name__}: {e}")
             raise LLMUnavailableError(f"LLM service error: {e}")
         except Exception as e:
-            logger.warning(f"LLM unexpected error: {e}")
+            logger.error(f"[LLM REFINER] ❌ LLM unexpected error: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(f"[LLM REFINER] Traceback: {traceback.format_exc()}")
             raise LLMUnavailableError(f"LLM service unavailable: {e}")
     
     def _build_user_prompt(self, text: str, existing_errors: list[dict]) -> str:
@@ -152,3 +167,4 @@ class OpenAIGrammarMCP(BaseMCPClient):
             return True
         except Exception:
             return False
+            
