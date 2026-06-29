@@ -4,7 +4,7 @@ import type { AssignmentsResponse } from '../../interface/Assigment'
 // Student Submit Submission
 export const submitGrammar = async (
     text: string,
-    assignmentId: string
+    assignmentId: string | null
 ) => {
 
     const response = await api.post(
