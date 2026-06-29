@@ -7,6 +7,7 @@ import AdminLogin from './pages/auth/AdminLogin'
 import StudentDashboard from './pages/dashboard/student/StudentDashboard'
 import History from './pages/dashboard/student/history/History'
 import AssignmentStudent from './pages/dashboard/student/assignments/AssignmentsStudent'
+import SubmissionDetail from './pages/dashboard/student/submission/SubmissionDetail'
 
 import TeacherDashboard from './pages/dashboard/teacher/TeacherDashboard'
 import TeacherHistory from './pages/dashboard/teacher/history/TeacherHistory'
@@ -72,6 +73,15 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <AssignmentStudent />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/student/submission/:id"
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <SubmissionDetail />
           </ProtectedRoute>
         }
       />

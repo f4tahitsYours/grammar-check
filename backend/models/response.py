@@ -120,6 +120,8 @@ class SubmissionDetailResponse(BaseModel):
     score_total: Optional[int] = None
     reviewed_at: Optional[str] = None
     score_hidden: bool = False
+    poster_url: Optional[str] = None
+    audio_url: Optional[str] = None
 
 class DashboardItem(BaseModel):
     submission_id: str

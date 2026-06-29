@@ -60,6 +60,14 @@ function SubmissionDetail() {
                     await getSubmissionDetail(id!)
 
                 setData(response)
+                
+                // Initialize multimedia URLs from API response
+                if (response.poster_url) {
+                    setPosterUrl(response.poster_url)
+                }
+                if (response.audio_url) {
+                    setAudioUrl(response.audio_url)
+                }
 
             } catch (error) {
 

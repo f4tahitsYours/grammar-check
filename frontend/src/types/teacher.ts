@@ -56,4 +56,7 @@ export interface SubmissionDetailResponse {
     reviewed_at?: string | null
 
     score_hidden?: boolean
+    
+    poster_url?: string | null
+    audio_url?: string | null
 }

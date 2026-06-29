@@ -388,6 +388,8 @@ async def get_submission_detail(
         score_total=display_score_total,
         reviewed_at=submission.get("reviewed_at"),
         score_hidden=score_hidden,
+        poster_url=submission.get("poster_url"),
+        audio_url=submission.get("audio_url"),
     )
 
 
@@ -433,6 +435,11 @@ async def generate_submission_poster(
         logger.warning(f"Poster generation failed, using fallback: {e}")
         poster_url = f"{settings.supabase_url}/storage/v1/object/public/posters/placeholder.png"
     
+    # Save poster_url to database
+    supabase.table("submissions").update({
+        "poster_url": poster_url
+    }).eq("id", submission_id).execute()
+    
     return {"poster_url": poster_url}
 
 
@@ -477,6 +484,12 @@ async def generate_submission_tts(
         # Return null - frontend will use Web Speech API
         logger.warning(f"TTS generation failed, returning null: {e}")
         audio_url = None
+    
+    # Save audio_url to database if not None
+    if audio_url:
+        supabase.table("submissions").update({
+            "audio_url": audio_url
+        }).eq("id", submission_id).execute()
     
     return {"audio_url": audio_url}
 
