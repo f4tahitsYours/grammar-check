@@ -55,6 +55,10 @@ export function useStudentDashboard() {
 
     const audio = useAudioPlayer()
 
+    // POSTER STATE
+    const [posterUrl, setPosterUrl] = useState<string | null>(null)
+    const [posterLoading, setPosterLoading] = useState(false)
+
     // FETCH ASSIGNMENT
     useEffect(() => {
 
@@ -285,28 +289,30 @@ export function useStudentDashboard() {
 
         if (!submissionId) return
 
+        setPosterLoading(true)
+
         try {
 
-            const posterUrl =
+            const response =
                 await generatePoster(submissionId)
 
-            console.log("Poster URL =", posterUrl)
-            console.log("Type =", typeof posterUrl)
+            const url = response.poster_url
 
-            if (!posterUrl) {
+            if (!url) {
 
                 console.error("Poster URL tidak ditemukan")
                 return
             }
 
-            window.open(
-                posterUrl,
-                "_blank"
-            )
+            setPosterUrl(url)
 
         } catch (err) {
 
-            console.error(err)
+            console.error("Generate poster gagal:", err)
+
+        } finally {
+
+            setPosterLoading(false)
         }
     }
 
@@ -332,6 +338,9 @@ export function useStudentDashboard() {
 
         assignmentNote,
         latestAssignments,
+
+        posterUrl,
+        posterLoading,
 
         handleTextarea,
         handleClear,

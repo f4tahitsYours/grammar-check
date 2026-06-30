@@ -22,6 +22,8 @@ function StudentDashboard() {
         showScore,
         audioRef,
         isPlaying,
+        posterUrl,
+        posterLoading,
         toggleAudio,
         handleTextarea,
         handleClear,
@@ -375,45 +377,15 @@ function StudentDashboard() {
                                 <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
 
                                     {/* TITLE */}
-                                    <div className="mb-4 flex items-start justify-between">
+                                    <div className="mb-4">
 
-                                        <div>
+                                        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                                            Corrected Result
+                                        </h2>
 
-                                            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                                                Corrected Result
-                                            </h2>
-
-                                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                                AI-generated grammar correction result
-                                            </p>
-
-                                        </div>
-
-                                        {/* GENERATE POSTER */}
-                                        <button
-                                            onClick={handleGeneratePoster}
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                rounded-xl
-                                                border
-                                                border-slate-300
-                                                px-4
-                                                py-2
-                                                text-sm
-                                                font-medium
-                                                text-slate-700
-                                                transition
-                                                hover:bg-slate-100
-                                                dark:border-slate-700
-                                                dark:text-slate-300
-                                                dark:hover:bg-slate-800
-                                            "
-                                        >
-                                            <ImagePlus size={18} />
-                                            Generate Poster
-                                        </button>
+                                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                            AI-generated grammar correction result
+                                        </p>
 
                                     </div>
 
@@ -484,6 +456,78 @@ function StudentDashboard() {
                                         </p>
 
                                     </div>
+
+                                </div>
+
+                                {/* POSTER PANEL */}
+                                <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-slate-900">
+
+                                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
+                                        Motivational Poster
+                                    </h3>
+
+                                    {!posterUrl && !posterLoading && (
+                                        <button
+                                            onClick={handleGeneratePoster}
+                                            disabled={posterLoading}
+                                            className="
+                                                w-full
+                                                flex
+                                                items-center
+                                                justify-center
+                                                gap-2
+                                                rounded-xl
+                                                bg-gradient-to-r
+                                                from-purple-500
+                                                to-pink-500
+                                                px-6
+                                                py-3
+                                                text-white
+                                                font-semibold
+                                                transition
+                                                hover:from-purple-600
+                                                hover:to-pink-600
+                                                disabled:opacity-50
+                                                disabled:cursor-not-allowed
+                                            "
+                                        >
+                                            <ImagePlus size={20} />
+                                            Generate Poster
+                                        </button>
+                                    )}
+
+                                    {posterLoading && (
+                                        <div className="flex flex-col items-center justify-center py-12">
+                                            <div className="h-12 w-12 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600 dark:border-purple-800 dark:border-t-purple-400"></div>
+                                            <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                                                Generating your motivational poster...
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {posterUrl && !posterLoading && (
+                                        <div className="space-y-3">
+                                            <img
+                                                src={posterUrl}
+                                                alt="Motivational Poster"
+                                                className="w-full rounded-xl shadow-lg"
+                                            />
+                                            <button
+                                                onClick={() => window.open(posterUrl, '_blank')}
+                                                className="
+                                                    w-full
+                                                    text-sm
+                                                    text-purple-600
+                                                    hover:text-purple-700
+                                                    dark:text-purple-400
+                                                    dark:hover:text-purple-300
+                                                    transition-colors
+                                                "
+                                            >
+                                                Open in new tab
+                                            </button>
+                                        </div>
+                                    )}
 
                                 </div>
 
