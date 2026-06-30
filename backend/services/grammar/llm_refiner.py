@@ -20,22 +20,51 @@ class LLMUnavailableError(Exception):
     pass
 
 
-SYSTEM_PROMPT = """You are a grammar correction assistant for secondary school English learners. Your task is to identify grammar errors in the student's text that were NOT already caught by the rule-based checker.
+SYSTEM_PROMPT = """You are a grammar correction assistant for secondary school English learners. Your task is to identify SEMANTIC and CONTEXTUAL errors in the student's text that were NOT already caught by the rule-based checker.
+
+Your task is to identify SEMANTIC and CONTEXTUAL errors that require understanding meaning, NOT just grammatical structure.
+
+Focus on:
+- Word choice errors (confusing similar words: affect/effect, boring/bored, exciting/excited)
+- Awkward phrasing that's grammatically correct but unclear
+- Ambiguous pronoun references
+- Logical inconsistencies or contradictions within the text
+- Incorrect collocations (e.g. "make a decision" not "do a decision")
+- Idiom misuse
+- Register/tone inconsistency
+- Preposition usage errors that change meaning
+
+Examples of contextual errors to detect:
+
+1. Wrong emotion word:
+   Error: "I was very exciting during the movie"
+   Correction: "I was very excited during the movie"
+   Type: word_choice
+
+2. Ambiguous reference:
+   Error: "John told Mark he was wrong"
+   Correction: clarify which person "he" refers to
+   Type: ambiguous_reference
+
+3. Awkward collocation:
+   Error: "I did a mistake in the test"
+   Correction: "I made a mistake in the test"
+   Type: collocation
 
 RULES:
-- DO NOT change vocabulary, writing style, or sentence meaning
+- Focus on errors that affect clarity and correctness
+- Preserve the student's intended meaning and general writing style
+- Correct vocabulary ONLY when the wrong word is used (e.g., "boring" when "bored" is meant, "affect" when "effect" is meant)
 - DO NOT re-correct errors already listed in the context
-- ONLY identify additional grammar errors
-- Focus on: tense consistency, preposition usage, contextual agreement
+- ONLY identify additional errors
 
 Respond ONLY in this JSON format:
 {
-  "corrected_text": "<full corrected text>",
   "additional_errors": [
     {
       "original": "<wrong word/phrase>",
       "correction": "<corrected form>",
-      "error_type": "<tense|subject_verb|article|preposition|spelling|punctuation|other>",
+      "error_type": "<tense|subject_verb|article|preposition|spelling|punctuation|word_choice|collocation|ambiguous_reference|other>",
       "explanation": "<one sentence in simple English>",
       "source": "llm",
       "offset": null
@@ -52,7 +81,7 @@ class OpenAIGrammarMCP(BaseMCPClient):
     def __init__(self):
         self._client: AsyncOpenAI | None = None
         self.model = "gpt-4o-mini"
-        self.temperature = 0
+        self.temperature = 0.4
     
     def _get_client(self) -> AsyncOpenAI:
         """Lazy initialization of OpenAI client."""
@@ -91,6 +120,7 @@ class OpenAIGrammarMCP(BaseMCPClient):
             response = await client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
+                max_tokens=500,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
@@ -143,12 +173,16 @@ class OpenAIGrammarMCP(BaseMCPClient):
         prompt = f"Original text:\n{text}\n\n"
         
         if existing_errors:
-            prompt += "Errors already found by rule-based checker:\n"
+            prompt += "Structural/rule-based errors already found:\n"
             for i, error in enumerate(existing_errors, 1):
                 prompt += f"{i}. {error.get('original', '')} → {error.get('correction', '')}\n"
-            prompt += "\nFind ADDITIONAL grammar errors not in the list above.\n"
+            prompt += "\nYour job: find SEMANTIC/CONTEXTUAL errors NOT caught above.\n"
+            prompt += "The rule-based checker found structural issues. Look for word "
+            prompt += "choice, ambiguous meaning, awkward phrasing, and logical problems.\n"
         else:
-            prompt += "No errors found by rule-based checker. Find all grammar errors.\n"
+            prompt += "No structural errors found by rule-based checker.\n"
+            prompt += "Check for semantic errors: word choice, ambiguous references, "
+            prompt += "logical inconsistencies, awkward phrasing.\n"
         
         return prompt
     
