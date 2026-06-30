@@ -81,7 +81,7 @@ class OpenAIGrammarMCP(BaseMCPClient):
     def __init__(self):
         self._client: AsyncOpenAI | None = None
         self.model = "gpt-4o-mini"
-        self.temperature = 0.4
+        self.temperature = 0
     
     def _get_client(self) -> AsyncOpenAI:
         """Lazy initialization of OpenAI client."""
