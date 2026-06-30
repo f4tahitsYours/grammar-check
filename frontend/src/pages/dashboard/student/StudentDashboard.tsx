@@ -9,6 +9,7 @@ function StudentDashboard() {
     const {
         text,
         loading,
+        wordCount,
         hasResult,
         textareaRef,
         correctedText,
@@ -36,9 +37,6 @@ function StudentDashboard() {
     } = useStudentDashboard()
 
     const navigate = useNavigate()
-    const wordCount = text.trim()
-        ? text.trim().split(/\s+/).length
-        : 0
 
     const isTooShort = wordCount < 20
 

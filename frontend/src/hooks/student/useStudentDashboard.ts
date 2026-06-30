@@ -22,10 +22,16 @@ export function useStudentDashboard() {
     const [searchParams] = useSearchParams()
 
     const assignmentId =
-        searchParams.get('assignment_id') || null
+        searchParams.get('assignment_id') || ''
         
 
     const [text, setText] = useState('')
+    // WORD COUNT
+    const wordCount =
+        text.trim() === ''
+            ? 0
+            : text.trim().split(/\s+/).length
+            
     const [loading, setLoading] = useState(false)
     const [hasResult, setHasResult] = useState(false)
 
@@ -248,20 +254,30 @@ export function useStudentDashboard() {
 
         if (!submissionId) return
 
-        const url =
-            await generateTTS(
-                submissionId
-            )
+        try {
 
-        audio.setAudioUrl(url)
+            const response =
+                await generateTTS(submissionId)
 
-        audio.setShowAudioControl(
-            true
-        )
+            const audioUrl = response.audio_url
 
-        requestAnimationFrame(() => {
-            audio.playAudio()
-        })
+            console.log("Audio URL:", audioUrl)
+
+            if (!audioUrl) {
+
+                console.error("Audio URL tidak ditemukan")
+                return
+            }
+
+            audio.setAudioUrl(audioUrl)
+
+            audio.setShowAudioControl(true)
+
+        } catch (err) {
+
+            console.error("Generate TTS gagal:", err)
+
+        }
     }
 
     // POSTER
@@ -269,21 +285,37 @@ export function useStudentDashboard() {
 
         if (!submissionId) return
 
-        const imageUrl =
-            await generatePoster(
-                submissionId
+        try {
+
+            const posterUrl =
+                await generatePoster(submissionId)
+
+            console.log("Poster URL =", posterUrl)
+            console.log("Type =", typeof posterUrl)
+
+            if (!posterUrl) {
+
+                console.error("Poster URL tidak ditemukan")
+                return
+            }
+
+            window.open(
+                posterUrl,
+                "_blank"
             )
 
-        window.open(
-            imageUrl,
-            '_blank'
-        )
+        } catch (err) {
+
+            console.error(err)
+        }
     }
 
     return {
 
         text,
         setText,
+
+        wordCount,
 
         loading,
         hasResult,

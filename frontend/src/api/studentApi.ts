@@ -26,7 +26,7 @@ export const generateTTS = async (
         `/student/tts/generate?submission_id=${submissionId}`
     )
 
-    return response.data
+    return response.data.audio_url
 }
 
 /* GENERATE POSTER */
@@ -38,7 +38,7 @@ export const generatePoster = async (
         `/student/poster/generate?submission_id=${submissionId}`
     )
 
-    return response.data
+    return response.data.poster_url
 }
 
 /* GET HISTORY */

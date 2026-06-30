@@ -13,6 +13,59 @@ export function useAudioPlayer() {
     const audioRef =
         useRef<HTMLAudioElement | null>(null)
 
+    useEffect(() => {
+
+        const audio = audioRef.current
+
+        if (!audio || !audioUrl) return
+
+        audio.src = audioUrl
+
+        audio.load()
+
+        audio.play()
+            .then(() => {
+
+                setIsPlaying(true)
+
+            })
+            .catch((err) => {
+
+                console.log(err)
+
+            })
+
+    }, [audioUrl])
+
+    // HANDLE AUDIO END
+    useEffect(() => {
+
+        const audio = audioRef.current
+
+        if (!audio) return
+
+        const handleEnded = () => {
+
+            setIsPlaying(false)
+
+            audio.currentTime = 0
+        }
+
+        audio.addEventListener(
+            'ended',
+            handleEnded
+        )
+
+        return () => {
+
+            audio.removeEventListener(
+                'ended',
+                handleEnded
+            )
+        }
+
+    }, [])
+
     // PLAY
     const playAudio = async () => {
 
@@ -45,13 +98,25 @@ export function useAudioPlayer() {
 
         if (!audioRef.current) return
 
-        if (isPlaying) {
+        try {
 
-            pauseAudio()
+            if (audioRef.current.paused) {
 
-        } else {
+                await audioRef.current.play()
 
-            await playAudio()
+                setIsPlaying(true)
+
+            } else {
+
+                audioRef.current.pause()
+
+                setIsPlaying(false)
+
+            }
+
+        } catch (err) {
+
+            console.log(err)
         }
     }
 
@@ -87,38 +152,18 @@ export function useAudioPlayer() {
             audioRef.current.pause()
 
             audioRef.current.currentTime = 0
+
+            audioRef.current.removeAttribute('src')
+
+            audioRef.current.load()
         }
 
-        setAudioUrl('')
+        setAudioUrl(null)
 
         setShowAudioControl(false)
 
         setIsPlaying(false)
     }
-
-    // HANDLE AUDIO END
-    useEffect(() => {
-
-        const audio = audioRef.current
-
-        if (!audio) return
-
-        const handleEnded = () => {
-
-            setIsPlaying(false)
-        }
-
-        audio.addEventListener('ended', handleEnded)
-
-        return () => {
-
-            audio.removeEventListener(
-                'ended',
-                handleEnded
-            )
-        }
-
-    }, [audioUrl])
 
     return {
 
