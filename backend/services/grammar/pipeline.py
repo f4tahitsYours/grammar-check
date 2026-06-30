@@ -5,7 +5,6 @@ Coordinates preprocessing, rule-based checking, LLM refinement, and caching.
 
 import hashlib
 import logging
-from difflib import HtmlDiff
 from dataclasses import asdict
 
 from backend.services.grammar.preprocessor import preprocess
@@ -36,14 +35,6 @@ def count_words(text: str) -> int:
     return len(text.split())
 
 
-def generate_diff_html(original: str, corrected: str) -> str:
-    """Generate HTML diff between original and corrected text."""
-    differ = HtmlDiff()
-    original_lines = original.splitlines()
-    corrected_lines = corrected.splitlines()
-    return differ.make_table(original_lines, corrected_lines)
-
-
 def compute_error_breakdown(errors: list) -> dict[str, int]:
     """Compute error breakdown by type."""
     breakdown = {}
@@ -70,10 +61,9 @@ async def run_pipeline(text: str) -> PipelineResult:
         4. Run LLM refiner (with fallback)
         5. Merge errors
         6. Calculate score
-        7. Generate diff HTML
-        8. Set warning if error rate > 60%
-        9. Write to cache
-        10. Return result
+        7. Set warning if error rate > 60%
+        8. Write to cache
+        9. Return result
     """
     fallback_used = False
     
@@ -170,15 +160,12 @@ async def run_pipeline(text: str) -> PipelineResult:
         word_count
     )
     
-    # Step 9: Generate diff HTML
-    diff_html = generate_diff_html(cleaned_text, corrected_text)
-    
-    # Step 10: Set warning if error rate > 60%
+    # Step 9: Set warning if error rate > 60%
     warning = None
     if word_count > 0 and (error_count / word_count) > 0.6:
         warning = "High error rate detected. Consider revising your text."
     
-    # Step 11: Write to cache
+    # Step 10: Write to cache
     errors_json = [asdict(e) for e in merged_errors]
     await cache.set(
         cache_key=cache_key,
@@ -190,7 +177,7 @@ async def run_pipeline(text: str) -> PipelineResult:
         feedback=feedback
     )
     
-    # Step 12: Return result
+    # Step 11: Return result
     source_info = "languagetool+llm" if (lt_errors and llm_errors) else ("languagetool_only" if lt_errors else ("llm_only" if llm_errors else "no_errors"))
     logger.info(f"[PIPELINE] 📊 Pipeline complete - Source: {source_info}, Total errors: {error_count}, Fallback used: {fallback_used}")
     

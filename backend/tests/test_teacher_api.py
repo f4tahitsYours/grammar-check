@@ -165,7 +165,6 @@ def test_get_submission_detail_same_school(override_auth, mock_supabase):
             "error_count": 2,
             "error_breakdown": {"spelling": 2},
             "feedback": "Good work!",
-            "diff_html": "",
             "fallback_used": False,
             "created_at": "2024-01-01T00:00:00Z",
             "assignment_id": "assign-1",

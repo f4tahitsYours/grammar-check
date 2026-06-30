@@ -183,7 +183,6 @@ async def get_submission_detail(
         error_count=submission["error_count"],
         error_breakdown=submission["error_breakdown"],
         feedback=submission["feedback"],
-        diff_html=submission.get("diff_html", ""),
         fallback_used=submission["fallback_used"],
         created_at=submission["created_at"],
         assignment_id=str(submission["assignment_id"]) if submission.get("assignment_id") else None,

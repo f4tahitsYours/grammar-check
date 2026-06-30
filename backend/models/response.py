@@ -67,7 +67,6 @@ class SubmitResponse(BaseModel):
     error_count: int
     error_breakdown: dict[str, int]
     feedback: str
-    diff_html: str
     fallback_used: bool
     warning: Optional[str] = None
     rubric_status: str
@@ -108,7 +107,6 @@ class SubmissionDetailResponse(BaseModel):
     error_count: int
     error_breakdown: dict[str, int]
     feedback: str
-    diff_html: str
     fallback_used: bool
     created_at: str
     assignment_id: Optional[str] = None

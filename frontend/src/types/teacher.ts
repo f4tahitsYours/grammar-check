@@ -39,7 +39,6 @@ export interface SubmissionDetailResponse {
     error_breakdown: Record<string, number>
 
     feedback: string
-    diff_html: string
 
     fallback_used: boolean
 

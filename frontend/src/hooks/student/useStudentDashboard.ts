@@ -43,7 +43,7 @@ export function useStudentDashboard() {
     const [feedback, setFeedback] = useState('')
     const [score, setScore] = useState<number | null>(null)
     const [grade, setGrade] = useState<string | null>(null)
-    const [diffHtml, setDiffHtml] = useState('')
+    const [errors, setErrors] = useState<any[]>([])
 
     const [showScore, setShowScore] = useState(false)
 
@@ -179,7 +179,7 @@ export function useStudentDashboard() {
         setFeedback('')
         setScore(null)
         setGrade(null)
-        setDiffHtml('')
+        setErrors([])
 
         audio.resetAudio()
 
@@ -217,8 +217,8 @@ export function useStudentDashboard() {
                 data.feedback
             )
 
-            setDiffHtml(
-                data.diff_html
+            setErrors(
+                data.errors || []
             )
 
             const hasScore =
@@ -332,7 +332,7 @@ export function useStudentDashboard() {
         feedback,
         score,
         grade,
-        diffHtml,
+        errors,
 
         showScore,
 

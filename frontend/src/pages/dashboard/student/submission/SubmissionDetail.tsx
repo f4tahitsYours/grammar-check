@@ -41,6 +41,7 @@ function SubmissionDetail() {
     const [data, setData] =
         useState<SubmissionDetailResponse | null>(null)
     
+    const [errors, setErrors] = useState<any[]>([])
     const [posterUrl, setPosterUrl] = useState<string | null>(null)
     const [posterLoading, setPosterLoading] = useState(false)
     const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -63,6 +64,9 @@ function SubmissionDetail() {
                     await getSubmissionDetail(id!)
 
                 setData(response)
+                
+                // Initialize errors array
+                setErrors(response.errors || [])
                 
                 // Initialize multimedia URLs from API response
                 if (response.poster_url) {
@@ -449,23 +453,93 @@ function SubmissionDetail() {
                                 Grammar Changes
                             </h3>
 
-                            <div
-                                className="
-                                    mt-4
-                                    rounded-2xl
-                                    border
-                                    border-dashed
-                                    border-slate-300
-                                    bg-slate-50
-                                    p-5
-                                    leading-8
-                                    dark:border-slate-700
-                                    dark:bg-slate-950
-                                "
-                                dangerouslySetInnerHTML={{
-                                    __html: data.diff_html
-                                }}
-                            />
+                            <div className="mt-4 space-y-3">
+                                {errors.length === 0 ? (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        No grammar errors detected. Great job!
+                                    </p>
+                                ) : (
+                                    errors.map((error, index) => {
+                                        const errorTypeColors: Record<string, { bg: string; text: string; border: string }> = {
+                                            spelling: { bg: 'bg-red-100 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-300', border: 'border-red-200 dark:border-red-900' },
+                                            punctuation: { bg: 'bg-blue-100 dark:bg-blue-950/30', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-900' },
+                                            subject_verb: { bg: 'bg-purple-100 dark:bg-purple-950/30', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-900' },
+                                            tense: { bg: 'bg-amber-100 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-900' },
+                                            article: { bg: 'bg-green-100 dark:bg-green-950/30', text: 'text-green-700 dark:text-green-300', border: 'border-green-200 dark:border-green-900' },
+                                            preposition: { bg: 'bg-cyan-100 dark:bg-cyan-950/30', text: 'text-cyan-700 dark:text-cyan-300', border: 'border-cyan-200 dark:border-cyan-900' },
+                                            other: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-700 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-700' }
+                                        }
+
+                                        const colors = errorTypeColors[error.error_type] || errorTypeColors.other
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`
+                                                    rounded-xl
+                                                    border
+                                                    ${colors.border}
+                                                    ${colors.bg}
+                                                    p-4
+                                                `}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className={`
+                                                                text-xs
+                                                                font-semibold
+                                                                uppercase
+                                                                ${colors.text}
+                                                            `}>
+                                                                {error.error_type.replace('_', ' ')}
+                                                            </span>
+                                                            {error.source === 'llm' && (
+                                                                <span className="
+                                                                    text-xs
+                                                                    px-2
+                                                                    py-0.5
+                                                                    rounded-full
+                                                                    bg-indigo-100
+                                                                    text-indigo-700
+                                                                    dark:bg-indigo-950/40
+                                                                    dark:text-indigo-300
+                                                                    font-medium
+                                                                ">
+                                                                    AI
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className={`
+                                                                line-through
+                                                                ${colors.text}
+                                                                opacity-70
+                                                            `}>
+                                                                {error.original}
+                                                            </span>
+                                                            <span className={colors.text}>→</span>
+                                                            <span className={`
+                                                                font-semibold
+                                                                ${colors.text}
+                                                            `}>
+                                                                {error.correction}
+                                                            </span>
+                                                        </div>
+                                                        <p className={`
+                                                            text-sm
+                                                            ${colors.text}
+                                                            opacity-90
+                                                        `}>
+                                                            {error.explanation}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
 
                         </div>
 

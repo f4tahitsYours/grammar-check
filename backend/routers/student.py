@@ -132,7 +132,6 @@ async def submit_text(
         "word_count": pipeline_result.word_count,
         "error_count": pipeline_result.error_count,
         "feedback": pipeline_result.feedback,
-        "diff_html": "",  # Will be generated on frontend or stored separately
         "input_hash": "",  # Not needed for submission record
         "fallback_used": pipeline_result.fallback_used,
         "score_grammar": score_grammar,
@@ -208,7 +207,6 @@ async def submit_text(
         error_count=pipeline_result.error_count,
         error_breakdown=pipeline_result.error_breakdown,
         feedback=pipeline_result.feedback,
-        diff_html="",  # Frontend will generate
         fallback_used=pipeline_result.fallback_used,
         warning=warning,
         rubric_status=rubric_status,
@@ -376,7 +374,6 @@ async def get_submission_detail(
         error_count=submission["error_count"],
         error_breakdown=submission["error_breakdown"],
         feedback=submission["feedback"],
-        diff_html=submission.get("diff_html", ""),
         fallback_used=submission["fallback_used"],
         created_at=submission["created_at"],
         assignment_id=str(submission["assignment_id"]) if submission.get("assignment_id") else None,
