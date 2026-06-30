@@ -507,11 +507,13 @@ function StudentDashboard() {
 
                                     {posterUrl && !posterLoading && (
                                         <div className="space-y-3">
-                                            <img
-                                                src={posterUrl}
-                                                alt="Motivational Poster"
-                                                className="w-full rounded-xl shadow-lg"
-                                            />
+                                            <div className="aspect-square w-full">
+                                                <img
+                                                    src={posterUrl}
+                                                    alt="Motivational Poster"
+                                                    className="h-full w-full rounded-xl shadow-lg object-contain"
+                                                />
+                                            </div>
                                             <button
                                                 onClick={() => window.open(posterUrl, '_blank')}
                                                 className="

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 
 import {
-    useParams
+    useParams,
+    useNavigate
 } from 'react-router-dom'
 
 import {
@@ -9,7 +10,8 @@ import {
     Clock,
     Image as ImageIcon,
     Volume2,
-    Loader2
+    Loader2,
+    ArrowLeft
 } from 'lucide-react'
 
 import DashboardLayout
@@ -31,6 +33,7 @@ import type {
 function SubmissionDetail() {
 
     const { id } = useParams()
+    const navigate = useNavigate()
 
     const [loading, setLoading] =
         useState(true)
@@ -149,6 +152,25 @@ function SubmissionDetail() {
         <DashboardLayout>
 
             <div className="space-y-6">
+
+                {/* BACK BUTTON */}
+                <button
+                    onClick={() => navigate('/dashboard/student/history')}
+                    className="
+                        flex
+                        items-center
+                        gap-2
+                        text-sm
+                        text-slate-600
+                        hover:text-slate-900
+                        dark:text-slate-300
+                        dark:hover:text-slate-100
+                        transition-colors
+                    "
+                >
+                    <ArrowLeft size={18} />
+                    Back to History
+                </button>
 
                 {/* HEADER */}
                 <div>
@@ -514,11 +536,13 @@ function SubmissionDetail() {
                                 
                                 {posterUrl && (
                                     <div className="space-y-3">
-                                        <img
-                                            src={posterUrl}
-                                            alt="Motivational Poster"
-                                            className="w-full rounded-xl shadow-lg"
-                                        />
+                                        <div className="aspect-square w-full">
+                                            <img
+                                                src={posterUrl}
+                                                alt="Motivational Poster"
+                                                className="h-full w-full rounded-xl shadow-lg object-contain"
+                                            />
+                                        </div>
                                         <button
                                             onClick={() => window.open(posterUrl, '_blank')}
                                             className="
