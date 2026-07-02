@@ -22,7 +22,7 @@ export function useStudentDashboard() {
     const [searchParams] = useSearchParams()
 
     const assignmentId =
-        searchParams.get('assignment_id') || ''
+        searchParams.get('assignment_id') || null
         
 
     const [text, setText] = useState('')
