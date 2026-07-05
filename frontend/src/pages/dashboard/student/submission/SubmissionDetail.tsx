@@ -241,12 +241,16 @@ function SubmissionDetail() {
                                     <div>
 
                                         <h3 className="font-semibold text-amber-800 dark:text-amber-300">
-                                            Nilai Belum Ditampilkan
+                                            {/* Nilai Belum Ditampilkan */}
+                                            Grade Not Displayed
                                         </h3>
 
                                         <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                                            Guru belum mengaktifkan tampilan nilai untuk tugas ini.
-                                            Anda masih dapat melihat koreksi grammar dan feedback.
+                                            The teacher has not enabled grade display for this assignment. 
+                                            You can still view grammar corrections and feedback.
+                                            {/* Anda masih dapat melihat koreksi grammar dan feedback. */}
+                                            {/* Guru belum mengaktifkan tampilan nilai untuk tugas ini. */}
+                                            
                                         </p>
 
                                     </div>
@@ -295,12 +299,15 @@ function SubmissionDetail() {
                                     <div>
 
                                         <h3 className="font-semibold text-blue-800 dark:text-blue-300">
-                                            Menunggu Penilaian Guru
+                                            {/* Menunggu Penilaian Guru */}
+                                            Awaiting Teacher's Grading
                                         </h3>
 
                                         <p className="mt-1 text-sm text-blue-700 dark:text-blue-400">
-                                            Submission Anda sedang menunggu penilaian dari guru.
-                                            Nilai final akan muncul setelah guru menyelesaikan review.
+                                            Your submission is awaiting grading by the instructor. 
+                                            The final grade will appear once the instructor has completed the review.
+                                            {/* Nilai final akan muncul setelah guru menyelesaikan review. */}
+                                            {/* Submission Anda sedang menunggu penilaian dari guru. */}
                                         </p>
 
                                     </div>
