@@ -120,7 +120,7 @@ class OpenAIGrammarMCP(BaseMCPClient):
             response = await client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
-                max_tokens=500,
+                max_tokens=2000,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
