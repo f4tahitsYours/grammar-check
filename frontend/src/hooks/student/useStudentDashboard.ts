@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import {
     submitGrammar,
     generatePoster,
-    generateTTS
+    generateTTS,
+    getSubmissionHistory
 } from '../../api/service/student/studentApi'
 
 import { useSearchParams } from 'react-router-dom'
@@ -14,6 +15,16 @@ type AssignmentNote = {
     assignment_id?: string
     title: string
     description: string
+    created_at: string
+}
+
+type SubmissionItem = {
+    id: string
+    assignment_id: string | null
+    score: number | null
+    grade: string | null
+    word_count: number
+    error_count: number
     created_at: string
 }
 
@@ -58,6 +69,9 @@ export function useStudentDashboard() {
     // POSTER STATE
     const [posterUrl, setPosterUrl] = useState<string | null>(null)
     const [posterLoading, setPosterLoading] = useState(false)
+    
+    // DUPLICATE SUBMISSION CHECK
+    const [hasSubmitted, setHasSubmitted] = useState(false)
 
     // FETCH ASSIGNMENT
     useEffect(() => {
@@ -102,6 +116,13 @@ export function useStudentDashboard() {
                             description: selected.description,
                             created_at: selected.created_at
                         })
+                        
+                        // Check if student already submitted for this assignment
+                        const submissionsRes = await getSubmissionHistory(1, 100)
+                        const alreadySubmitted = submissionsRes.items?.some(
+                            (s: SubmissionItem) => s.assignment_id === assignmentId
+                        )
+                        setHasSubmitted(alreadySubmitted || false)
 
                         return
                     }
@@ -341,6 +362,8 @@ export function useStudentDashboard() {
 
         posterUrl,
         posterLoading,
+        
+        hasSubmitted,
 
         handleTextarea,
         handleClear,

@@ -2,7 +2,7 @@ import PageTransition from '../../../components/common/PageTransition'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { SendHorizonal, Volume2, Sparkles, Trophy, X, RotateCcw, RotateCw, Pause, ImagePlus, Play } from 'lucide-react'
 import { useStudentDashboard } from '../../../hooks/student/useStudentDashboard'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 function StudentDashboard() {
 
@@ -24,6 +24,7 @@ function StudentDashboard() {
         isPlaying,
         posterUrl,
         posterLoading,
+        hasSubmitted,
         toggleAudio,
         handleTextarea,
         handleClear,
@@ -333,7 +334,7 @@ function StudentDashboard() {
 
                                 {/* CHECK BUTTON */}
                                 <button
-                                    disabled={isTooShort || isTooLong || loading}
+                                    disabled={isTooShort || isTooLong || loading || hasSubmitted}
                                     onClick={handleCheckGrammar}
                                     className="
                                         ml-auto
@@ -366,6 +367,20 @@ function StudentDashboard() {
                                 </button>
 
                             </div>
+                            
+                            {/* ALREADY SUBMITTED MESSAGE */}
+                            {hasSubmitted && assignmentNote?.assignment_id && (
+                                <div className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+                                    You have submitted this assignment.{' '}
+                                    <Link 
+                                        to="/dashboard/student/history"
+                                        className="underline hover:text-amber-700 dark:hover:text-amber-300"
+                                    >
+                                        View results in History
+                                    </Link>
+                                    .
+                                </div>
+                            )}
 
                         </div>
 
