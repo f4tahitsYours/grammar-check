@@ -53,7 +53,26 @@ async def submit_text(
     Supports two modes:
     - Mode A (Free Practice): assignment_id = None
     - Mode B (Assignment): assignment_id provided
+    
+    Restriction: One submission per student per assignment.
     """
+    # Step 0: Check for duplicate submission (assignment mode only)
+    if request.assignment_id is not None:
+        supabase = get_supabase_client()
+        existing = supabase.table("submissions").select(
+            "id"
+        ).eq(
+            "student_id", current_user.user_id
+        ).eq(
+            "assignment_id", str(request.assignment_id)
+        ).execute()
+        
+        if existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="You have already submitted for this assignment. Only one submission per assignment is allowed."
+            )
+    
     # Step 1: Preprocess text
     cleaned_text = preprocess(request.text)
     

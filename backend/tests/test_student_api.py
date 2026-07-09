@@ -99,6 +99,11 @@ def test_submit_valid_text_with_assignment(override_auth, mock_supabase, mock_pi
     """Test 2: Submit valid text with assignment_id → 200, rubric_status=awaiting_review"""
     assignment_id = str(uuid4())
     
+    # Mock duplicate check (no existing submission)
+    mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[]
+    )
+    
     # Mock Supabase insert
     mock_supabase.table.return_value.insert.return_value.execute.return_value = MagicMock(
         data=[{"id": "sub-456"}]
@@ -327,3 +332,69 @@ def test_get_submission_detail_awaiting_review_no_total(override_auth, mock_supa
     data = response.json()
     assert data["rubric_status"] == "awaiting_review"
     assert data["score_total"] is None  # Hidden until complete
+
+
+def test_submit_duplicate_assignment_submission(override_auth, mock_supabase, mock_pipeline):
+    """Test 9: Submit to same assignment twice → 409 Conflict"""
+    assignment_id = str(uuid4())
+    
+    # Mock duplicate check (existing submission found)
+    mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = MagicMock(
+        data=[{"id": "existing-sub-123"}]
+    )
+    
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/student/submit",
+        json={
+            "text": "This is a test submission with more than twenty words to pass validation. "
+                    "It contains enough content to be processed by the system.",
+            "assignment_id": assignment_id
+        }
+    )
+    
+    assert response.status_code == 409
+    assert "already submitted" in response.json()["detail"].lower()
+    assert "one submission per assignment" in response.json()["detail"].lower()
+
+
+def test_submit_multiple_free_practice_allowed(override_auth, mock_supabase, mock_pipeline):
+    """Test 10: Multiple free practice submissions (no assignment_id) → all succeed"""
+    # Mock Supabase insert for both submissions
+    mock_supabase.table.return_value.insert.return_value.execute.return_value = MagicMock(
+        data=[{"id": "sub-free-1"}]
+    )
+    
+    client = TestClient(app)
+    
+    # First submission
+    response1 = client.post(
+        "/api/v1/student/submit",
+        json={
+            "text": "This is a test submission with more than twenty words to pass validation. "
+                    "It contains enough content to be processed by the system."
+        }
+    )
+    assert response1.status_code == 200
+    
+    # Update mock for second submission
+    mock_supabase.table.return_value.insert.return_value.execute.return_value = MagicMock(
+        data=[{"id": "sub-free-2"}]
+    )
+    
+    # Second submission (same student, no assignment_id)
+    response2 = client.post(
+        "/api/v1/student/submit",
+        json={
+            "text": "This is another free practice submission with more than twenty words. "
+                    "Students can submit as many times as they want in free practice mode."
+        }
+    )
+    assert response2.status_code == 200
+    
+    # Both submissions should succeed
+    data1 = response1.json()
+    data2 = response2.json()
+    assert data1["rubric_status"] == "auto_only"
+    assert data2["rubric_status"] == "auto_only"
+
