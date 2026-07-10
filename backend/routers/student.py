@@ -56,23 +56,6 @@ async def submit_text(
     
     Restriction: One submission per student per assignment.
     """
-    # Step 0: Check for duplicate submission (assignment mode only)
-    if request.assignment_id is not None:
-        supabase = get_supabase_client()
-        existing = supabase.table("submissions").select(
-            "id"
-        ).eq(
-            "student_id", current_user.user_id
-        ).eq(
-            "assignment_id", str(request.assignment_id)
-        ).execute()
-        
-        if existing.data:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already submitted for this assignment. Only one submission per assignment is allowed."
-            )
-    
     # Step 1: Preprocess text
     cleaned_text = preprocess(request.text)
     
@@ -100,7 +83,25 @@ async def submit_text(
         word_count = 500
         warning = "Input truncated to 500 words."
     
-    # Step 4: Run pipeline
+    # Step 4: Check for duplicate submission (assignment mode only)
+    # This runs BEFORE cache lookup to ensure assignment restriction is enforced
+    if request.assignment_id is not None:
+        supabase = get_supabase_client()
+        existing = supabase.table("submissions").select(
+            "id"
+        ).eq(
+            "student_id", current_user.user_id
+        ).eq(
+            "assignment_id", str(request.assignment_id)
+        ).execute()
+        
+        if existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="You have already submitted for this assignment. Only one submission per assignment is allowed."
+            )
+    
+    # Step 5: Run pipeline (cache check happens inside)
     pipeline_result = await run_pipeline(cleaned_text)
     
     # Merge warning from pipeline if exists
@@ -109,7 +110,7 @@ async def submit_text(
     elif pipeline_result.warning:
         warning = pipeline_result.warning
     
-    # Step 5: Determine scoring mode
+    # Step 6: Determine scoring mode
     if request.assignment_id is None:
         # MODE A — Free Practice
         score = pipeline_result.score
@@ -136,7 +137,7 @@ async def submit_text(
         score_mechanics = rubric_score.score_mechanics
         rubric_status = "awaiting_review"
     
-    # Step 6: Save to submissions table
+    # Step 7: Save to submissions table
     supabase = get_supabase_client()
     
     submission_data = {
@@ -173,7 +174,7 @@ async def submit_text(
     
     submission_id = result.data[0]["id"]
     
-    # Step 7: Record metrics in background
+    # Step 8: Record metrics in background
     background_tasks.add_task(
         record_pipeline_metric,
         source=pipeline_result.source,
@@ -184,13 +185,13 @@ async def submit_text(
         user_id=current_user.user_id
     )
     
-    # Step 8: Log submission
+    # Step 9: Log submission
     logger.info(
         f"Submission created: submission_id={submission_id}, "
         f"user_id={current_user.user_id}, mode={'B' if request.assignment_id else 'A'}"
     )
     
-    # Step 9: Check score visibility for assignment submissions
+    # Step 10: Check score visibility for assignment submissions
     score_hidden = False
     response_score = score
     response_grade = grade
@@ -213,7 +214,7 @@ async def submit_text(
                 response_score_grammar = None
                 response_score_mechanics = None
     
-    # Step 10: Return response
+    # Step 11: Return response
     return SubmitResponse(
         submission_id=submission_id,
         source=pipeline_result.source,
