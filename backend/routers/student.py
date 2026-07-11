@@ -87,6 +87,13 @@ async def submit_text(
     # This runs BEFORE cache lookup to ensure assignment restriction is enforced
     if request.assignment_id is not None:
         supabase = get_supabase_client()
+        
+        # DEBUG LOGGING
+        logger.info(f"[DUPLICATE CHECK] Checking for existing submission")
+        logger.info(f"[DUPLICATE CHECK] student_id (user_id from JWT): {current_user.user_id}")
+        logger.info(f"[DUPLICATE CHECK] assignment_id (from request): {request.assignment_id}")
+        logger.info(f"[DUPLICATE CHECK] assignment_id (as string): {str(request.assignment_id)}")
+        
         existing = supabase.table("submissions").select(
             "id"
         ).eq(
@@ -95,11 +102,18 @@ async def submit_text(
             "assignment_id", str(request.assignment_id)
         ).execute()
         
+        # DEBUG LOGGING
+        logger.info(f"[DUPLICATE CHECK] Query returned: {existing.data}")
+        logger.info(f"[DUPLICATE CHECK] Number of existing submissions found: {len(existing.data) if existing.data else 0}")
+        
         if existing.data:
+            logger.warning(f"[DUPLICATE CHECK] DUPLICATE DETECTED! Rejecting with 409")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="You have already submitted for this assignment. Only one submission per assignment is allowed."
             )
+        else:
+            logger.info(f"[DUPLICATE CHECK] No duplicate found, proceeding with submission")
     
     # Step 5: Run pipeline (cache check happens inside)
     pipeline_result = await run_pipeline(cleaned_text)
