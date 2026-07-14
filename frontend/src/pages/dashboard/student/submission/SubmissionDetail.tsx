@@ -140,17 +140,6 @@ function SubmissionDetail() {
             alert('Browser Anda tidak mendukung text-to-speech')
         }
     }
-    
-    const handlePlayAudio = () => {
-        if (audioUrl) {
-            const audio = new Audio(audioUrl)
-            audio.play()
-            setIsPlaying(true)
-            audio.onended = () => setIsPlaying(false)
-        } else {
-            handleWebSpeechFallback()
-        }
-    }
 
     return (
         <DashboardLayout>
